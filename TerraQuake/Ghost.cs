@@ -75,43 +75,79 @@ namespace BalloonInvasion
 
             RendererBody.Scale = 0.5f;
 
-            if (Keyboard.GetState().IsKeyDown(Keys.A))
+            if (OnGround)
             {
-                if (!LeftBlocked)
+                if (Keyboard.GetState().IsKeyDown(Keys.A))
                 {
-                    Object.Position.X--;
-                } else if (OnGround)
-                {
-                    int HowMuch = CanClimb(Colision, Colision.Left-1, -1);
-                    if(HowMuch > 0)
+                    if (!LeftBlocked)
                     {
                         Object.Position.X--;
-                        Object.Position.Y -= HowMuch;
+                    } else if (OnGround)
+                    {
+                        int HowMuch = CanClimb(Colision, Colision.Left - 1, -1);
+                        if (HowMuch > 0)
+                        {
+                            Object.Position.X--;
+                            Object.Position.Y -= HowMuch;
+                        }
+                    }
+                }
+
+                if (Keyboard.GetState().IsKeyDown(Keys.D))
+                {
+                    if (!RightBlocked)
+                    {
+                        Object.Position.X++;
+                    } else if (OnGround)
+                    {
+                        int HowMuch = CanClimb(Colision, Colision.Right + 1, 1);
+                        if (HowMuch > 0)
+                        {
+                            Object.Position.X++;
+                            Object.Position.Y -= HowMuch;
+                        }
                     }
                 }
             }
 
-            if (Keyboard.GetState().IsKeyDown(Keys.D))
+            if (Velocity.Y != 0)
             {
-                if (!RightBlocked)
-                {
-                    Object.Position.X++;
-                } else if(OnGround)
-                {
-                    int HowMuch = CanClimb(Colision, Colision.Right+1, 1);
-                    if (HowMuch > 0)
-                    {
-                        Object.Position.X++;
-                        Object.Position.Y -= HowMuch;
-                    }
-                }
+                Velocity.Y--;
+                Object.Position.Y--;
             }
+
             if (!OnGround)
             {
-                Object.Position.Y++;
+                if(Velocity.Y == 0)
+                {
+                    Object.Position.Y++;
+                }
+                if (Velocity.X != 0)
+                {
+                    Object.Position.X++;
+                    Velocity.X--;
+                }
+            } else
+            {
+                Velocity.X = 0;
             }
         }
 
+        public void Jump()
+        {
+            if (OnGround)
+            {
+                Velocity.Y = 30;
+            }
+        }
+        public void JumpForward()
+        {
+            if (OnGround)
+            {
+                Velocity.Y = 20;
+                Velocity.X = 50;
+            }
+        }
         public string GetIdle()
         {
             if (Side)

@@ -282,6 +282,12 @@ namespace BalloonInvasion
 
                     TerrainInstance.Blast(X, Y, 30);
                 }
+            } else if (Key == Keys.LeftShift)
+            {
+                if (TerrainInstance != null && TerrainInstance.ManualUpdate)
+                {
+                    TerrainInstance.FallingPixels();
+                }
             }
         }
 
@@ -321,6 +327,27 @@ namespace BalloonInvasion
                                 Animator.ByPassDebug = true;
                             }
                         }
+                    }
+                }
+                if (Keyboard.GetState().IsKeyDown(Keys.LeftControl))
+                {
+                    if (TerrainInstance != null && TerrainInstance.ManualUpdate)
+                    {
+                        TerrainInstance.FallingPixels();
+                    }
+                }
+                if (Keyboard.GetState().IsKeyDown(Keys.Space))
+                {
+                    if (MyGhost != null)
+                    {
+                        MyGhost.Jump();
+                    }
+                }
+                if (Keyboard.GetState().IsKeyDown(Keys.Enter))
+                {
+                    if (MyGhost != null)
+                    {
+                        MyGhost.JumpForward();
                     }
                 }
             }
