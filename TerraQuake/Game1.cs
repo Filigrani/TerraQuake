@@ -49,7 +49,7 @@ namespace BalloonInvasion
             LayersManager.AddLayer("Objects");
             LayersManager.AddLayer("Player");
 
-            bool Debug = false;
+            bool Debug = true;
 
             LayersManager.AddLayer("Debug").Visible = Debug;
 

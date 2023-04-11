@@ -27,6 +27,9 @@ namespace TerraQuake
         public bool NoRenderUpdate = false;
         public bool ReadyForRender = false;
         public bool ManualUpdate = false;
+        public bool NoRolling = true;
+        public bool NoWaterFlow = false;
+        public bool NoAbovePing = false;
 
         public int LongetsUpdateMs = 0;
         public int LongetsRenderMs = 0;
@@ -152,6 +155,12 @@ namespace TerraQuake
 
         public int GetRandomRollingNums()
         {
+            if (NoRolling)
+            {
+                return 0;
+            }
+            
+            
             if (LastRandomRollingNumsIndex == 33)
             {
                 LastRandomRollingNumsIndex = 0;
@@ -207,14 +216,17 @@ namespace TerraQuake
                 PxRight = Pixels[iX + 1, iY];
             }
 
-            if (Px.IsWater())
+            if (!NoWaterFlow)
             {
-                if(PxRight != null && PxRight.IsAir())
+                if (Px.IsWater())
                 {
-                    AddProcessPixel(iX, iY);
-                }else if(PxLeft != null && PxLeft.IsAir())
-                {
-                    AddProcessPixel(iX, iY);
+                    if (PxRight != null && PxRight.IsAir())
+                    {
+                        AddProcessPixel(iX, iY);
+                    } else if (PxLeft != null && PxLeft.IsAir())
+                    {
+                        AddProcessPixel(iX, iY);
+                    }
                 }
             }
 
@@ -257,7 +269,7 @@ namespace TerraQuake
                     // Re-render this pixels
                     AddChangedPixel(iX, iY);
                     AddChangedPixel(iX, iY + 1);
-                } else if ((Px.Water && Px.Rolling > -100) || Px.Rolling > 0) // Ability to roll left and right.
+                } else if (!NoRolling && ((Px.Water && Px.Rolling > -100) || Px.Rolling > 0)) // Ability to roll left and right.
                 {
                     Px.Rolling--; // Remove 1 from rolling counts.
 
@@ -303,7 +315,7 @@ namespace TerraQuake
                     }
                 }
             }
-            if (UpdateAbove)
+            if (!NoAbovePing && UpdateAbove)
             {
                 ProcessPixel(iX, iY-1);
             }
@@ -454,7 +466,7 @@ namespace TerraQuake
 
         public void FallingPixels()
         {
-            if(ProcessQueue.Count > 0)
+            if (ProcessQueue.Count > 0)
             {
                 ProcessQueue.Sort(delegate (ProcessPixelElement p1, ProcessPixelElement p2) { return p1.Priority.CompareTo(p2.Priority); });
                 ProcessQueue.Reverse();
