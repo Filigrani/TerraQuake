@@ -273,15 +273,6 @@ namespace BalloonInvasion
 
                     TerrainInstance.MakeDirt(X, Y, 10);
                 }
-            } else if (Key == Keys.N)
-            {
-                if (TerrainInstance != null)
-                {
-                    int X = (int)GetPointer().X;
-                    int Y = (int)GetPointer().Y;
-
-                    TerrainInstance.Blast(X, Y, 30);
-                }
             } else if (Key == Keys.LeftShift)
             {
                 if (TerrainInstance != null && TerrainInstance.ManualUpdate)

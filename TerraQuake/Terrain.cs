@@ -52,19 +52,7 @@ namespace TerraQuake
             public bool Fallable = true;
             public bool Water = false;
             public bool HasBackground = false;
-            public bool Flying = false;
-            public int VelocityX = 0;
-            public int VelocityY = 0;
             public bool SkipProcess = false;
-
-
-            public void Blast(int BlastX, int BlastY)
-            {
-                VelocityX = BlastX;
-                VelocityY = BlastY;
-
-                Flying = true;
-            }
 
             public void Delete()
             {
@@ -73,9 +61,6 @@ namespace TerraQuake
                 RollingDir = 0;
                 Fallable = true;
                 Water = false;
-                VelocityX = 0;
-                VelocityY = 0;
-                Flying = false;
             }
 
             public void MoveTo(TerrainPixel New)
@@ -85,9 +70,6 @@ namespace TerraQuake
                 New.RollingDir = RollingDir;
                 New.Fallable = Fallable;
                 New.Water = Water;
-                New.VelocityX = VelocityX;
-                New.VelocityY = VelocityY;
-                New.Flying = Flying;
             }
 
             public bool IsAir()
@@ -198,6 +180,24 @@ namespace TerraQuake
             int Val = RandomColors[LastRandomColorsIndex];
             LastRandomColorsIndex++;
             return Val;
+        }
+
+        public void ProcessPixelNew(int iX, int iY)
+        {
+            TerrainPixel Px = Pixels[iX, iY];
+            if (Px.Fallable)
+            {
+                TerrainPixel PxBelow = null;
+                if(iY + 1 != TerrainH)
+                {
+                    PxBelow = Pixels[iX, iY + 1];
+                    if (PxBelow.IsAir())
+                    {
+                        Px.MoveTo(PxBelow);
+                        Px.Delete();
+                    }
+                }
+            }
         }
 
         public void ProcessPixel(int iX, int iY)
@@ -512,6 +512,7 @@ namespace TerraQuake
         //    }
         //    ScanDirectionRight = !ScanDirectionRight;
         //}
+
         public Color GetGroundColor()
         {
             int Variant = GetRandomColor();
@@ -857,69 +858,6 @@ namespace TerraQuake
             MakeHole(537, 100, 70);
             MakeHole(72, 230, 70);
             MakeHole(791, 188, 70);
-        }
-
-        public void Blast(int X, int Y, int Radius)
-        {
-            int StartX = X - Radius;
-            int EndX = X + Radius;
-            int StartY = Y - Radius;
-            int EndY = Y + Radius;
-
-            if (StartX < 0)
-            {
-                StartX = 0;
-            } else if (StartX > TerrainW)
-            {
-                StartX = TerrainW;
-            }
-            if (EndX < 0)
-            {
-                EndX = 0;
-            } else if (EndX > TerrainW)
-            {
-                EndX = TerrainW;
-            }
-            if (StartY < 0)
-            {
-                StartY = 0;
-            } else if (StartY > TerrainH)
-            {
-                StartY = TerrainH;
-            }
-            if (EndY < 0)
-            {
-                EndY = 0;
-            } else if (EndY > TerrainH)
-            {
-                EndY = TerrainH;
-            }
-            for (int iY = StartY; iY != EndY; iY++)
-            {
-                for (int iX = StartX; iX != EndX; iX++)
-                {
-                    int num = iX - X;
-                    int num2 = iY - Y;
-                    float Dis = MathF.Sqrt(num * num + num2 * num2);
-
-                    if (Dis <= Radius)
-                    {
-                        int BlastX = -GetRandomRollingNums() * 100;
-                        int BlastY = -GetRandomRollingNums() * 100;
-                        //if (iX > X)
-                        //{
-                        //    BlastX = -GetRandomRollingNums() * 100;
-                        //} else
-                        //{
-                        //    BlastX = GetRandomRollingNums() * 100;
-                        //}
-                        
-                        
-                        Pixels[iX, iY].Blast(BlastX, BlastY);
-                        AddChangedPixel(iX, iY);
-                    }
-                }
-            }
         }
 
         public Point LastHole = new Point(0,0);
