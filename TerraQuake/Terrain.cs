@@ -32,7 +32,6 @@ namespace TerraQuake
         public bool TerrainHasBeenModified = false;
         public long LongetsUpdateMs = 0;
         public int LongetsRenderMs = 0;
-        public List<Rectangle> Rects = new List<Rectangle>();
 
         public Terrain()
         {
@@ -190,13 +189,16 @@ namespace TerraQuake
             return Val;
         }
 
+        public const int PixelMoveSpeed = 4;
+
         public void ProcessPixel(int iX, int iY)
         {
             TerrainPixel Px = GetPixel(iX, iY);
             if (Px.IsFallable()) // Pixel is dynamic.
             {
                 int Fall = 0;
-                while (Fall != 33)
+                bool CanRoll = false;
+                while (Fall != PixelMoveSpeed)
                 {
                     if (iY + 1 != TerrainH) // This is not last layer.
                     {
@@ -221,66 +223,87 @@ namespace TerraQuake
                             AddChangedPixel(iX, iY + 1, PxBelow.Color);
                             Fall++;
                             Px = PxBelow;
+                            iY++;
                             continue;
                         } else
                         {
+                            CanRoll = true;
                             break;
                         }
                     } else
                     {
+                        CanRoll = true;
                         break;
                     }
                 }
 
-                if ((Px.Water && Px.Rolling > -100) || Px.Rolling > 0) // Ability to roll left and right.
+                if (CanRoll)
                 {
-                    Px.Rolling--; // Remove 1 from rolling counts.
-
-                    bool CanRollRight = false;
-                    bool CanRollLeft = false;
-                    TerrainPixel PxRight = null;
-                    TerrainPixel PxLeft = null;
-                    if (iX + 1 < TerrainW)
+                    int Roll = 0;
+                    while(Roll != PixelMoveSpeed)
                     {
-                        PxRight = GetPixel(iX + 1, iY);
-                        CanRollRight = PxRight.IsAir();
-                    }
-                    if (iX - 1 >= 0)
-                    {
-                        PxLeft = GetPixel(iX - 1, iY);
-                        CanRollLeft = PxLeft.IsAir();
-                    }
-
-                    if (CanRollLeft && CanRollRight)
-                    {
-                        Px.RollingDir = GetRandomDirection();
-                    } else if (CanRollLeft)
-                    {
-                        Px.RollingDir = -1;
-                    } else if (CanRollRight)
-                    {
-                        Px.RollingDir = 1;
-                    } else
-                    {
-                        Px.Rolling = 0;
-                        Px.RollingDir = 0;
-                    }
-                    int Dir = Px.RollingDir;
-
-                    if (Dir != 0)
-                    {
-                        if (Dir == 1)
+                        if ((Px.Water && Px.Rolling > -100) || Px.Rolling > 0) // Ability to roll left and right.
                         {
-                            Px.MoveTo(PxRight);
-                            Px.Delete();
-                            AddChangedPixel(iX + Dir, iY, PxRight.Color);
-                            AddChangedPixel(iX, iY, Color.Transparent);
+                            Px.Rolling--; // Remove 1 from rolling counts.
+
+                            bool CanRollRight = false;
+                            bool CanRollLeft = false;
+                            TerrainPixel PxRight = null;
+                            TerrainPixel PxLeft = null;
+                            if (iX + 1 < TerrainW)
+                            {
+                                PxRight = GetPixel(iX + 1, iY);
+                                CanRollRight = PxRight.IsAir();
+                            }
+                            if (iX - 1 >= 0)
+                            {
+                                PxLeft = GetPixel(iX - 1, iY);
+                                CanRollLeft = PxLeft.IsAir();
+                            }
+
+                            if (CanRollLeft && CanRollRight)
+                            {
+                                Px.RollingDir = GetRandomDirection();
+                            } else if (CanRollLeft)
+                            {
+                                Px.RollingDir = -1;
+                            } else if (CanRollRight)
+                            {
+                                Px.RollingDir = 1;
+                            } else
+                            {
+                                Px.Rolling = 0;
+                                Px.RollingDir = 0;
+                            }
+                            int Dir = Px.RollingDir;
+
+                            if (Dir != 0)
+                            {
+                                if (Dir == 1)
+                                {
+                                    Px.MoveTo(PxRight);
+                                    Px.Delete();
+                                    AddChangedPixel(iX + Dir, iY, PxRight.Color);
+                                    AddChangedPixel(iX, iY, Color.Transparent);
+                                    Px = PxRight;
+                                    iX ++;
+                                } else
+                                {
+                                    Px.MoveTo(PxLeft);
+                                    Px.Delete();
+                                    AddChangedPixel(iX + Dir, iY, PxLeft.Color);
+                                    AddChangedPixel(iX, iY, Color.Transparent);
+                                    Px = PxLeft;
+                                    iX--;
+                                }
+                                Roll++;
+                            } else
+                            {
+                                break;
+                            }
                         } else
                         {
-                            Px.MoveTo(PxLeft);
-                            Px.Delete();
-                            AddChangedPixel(iX + Dir, iY, PxLeft.Color);
-                            AddChangedPixel(iX, iY, Color.Transparent);
+                            break;
                         }
                     }
                 }
@@ -636,50 +659,6 @@ namespace TerraQuake
                 AddPond(WorldGenRandom);
             }
         }
-
-        public void SliceOnChunks()
-        {
-            int ChunkW = 1000;
-            int ChunkH = 900;
-
-            int StartX = 0;
-            int StartY = 0;
-            while (true)
-            {
-                if (StartX >= TerrainW)
-                {
-                    StartX = 0;
-                    StartY += ChunkH;
-                }
-                if (StartY >= TerrainH)
-                {
-                    break;
-                }
-                Rectangle Rect = new Rectangle(StartX, StartY, ChunkW, ChunkH);
-                Rects.Add(Rect);
-
-                StartX += ChunkW;
-            }
-            Texture2D DebugTex = ContentManager.GetSprite("DebugWhite");
-
-            Color[] Colors = {Color.Red, Color.Green, Color.Yellow, Color.Blue, Color.Cyan, Color.Salmon};
-            int ColorIndex = 0;
-
-            foreach (Rectangle Rect in Rects)
-            {
-                GameObject ChunkDebug = GameObjectManager.CreateObject();
-                Renderer Rend = new Renderer("Debug");
-                Rend.SetSprite(DebugTex, new Rectangle(0, 0, ChunkW, ChunkH));
-                Rend.Tint = Colors[ColorIndex];
-                ColorIndex++;
-                if(ColorIndex == Colors.Length)
-                {
-                    ColorIndex = 0;
-                }
-                ChunkDebug.AddComponent(Rend);
-                ChunkDebug.Position = new Vector2(Rect.X, Rect.Y);
-            }
-        }
         public void CreateTerrain(int Seed = 0)
         {
             ReadyForRender = false;
@@ -695,7 +674,6 @@ namespace TerraQuake
             //AdvancedGenerator();
             //HillsGenerator();
             //SolidGenerator();
-            SliceOnChunks();
             ReadyForRender = true;
             RenderTerrain(ContentManager.Game.GraphicsDevice);
         }
@@ -1062,44 +1040,12 @@ namespace TerraQuake
         {
             if (!ManualUpdate && ReadyForRender)
             {
-                if (!UpdateThreadsCreated)
-                {
-                    foreach (Rectangle Rect in Rects)
-                    {
-                        Task.Factory.StartNew(() =>
-                        {
-                            Stopwatch sp = new Stopwatch();
-                            while (!UpdateTreadInterrupt)
-                            {
-                                sp.Restart();
-                                for (int iY = Rect.Y+Rect.Height-1; iY != Rect.Y-1; iY--)
-                                {
-                                    if (ScanDirectionRight)
-                                    {
-                                        for (int iX = Rect.X; iX != Rect.X+Rect.Width-1; iX++)
-                                        {
-                                            ProcessPixel(iX, iY);
-                                        }
-                                    } else
-                                    {
-                                        for (int iX = Rect.X + Rect.Width - 1; iX != Rect.X-1; iX--)
-                                        {
-                                            ProcessPixel(iX, iY);
-                                        }
-                                    }
-                                }
-                                ScanDirectionRight = !ScanDirectionRight;
-
-                                if (sp.ElapsedMilliseconds > LongetsUpdateMs)
-                                {
-                                    LongetsUpdateMs = sp.Elapsed.Milliseconds;
-                                }
-                                sp.Stop();
-                            }
-                        });
-                    }
-                    UpdateThreadsCreated = true;
-                }
+                //if (!UpdateThreadsCreated)
+                //{
+                //    Task.Factory.StartNew(FallingPixels);
+                //    UpdateThreadsCreated = true;
+                //}
+                FallingPixels();
             }
 
             if (Keyboard.GetState().IsKeyDown(Keys.U))
