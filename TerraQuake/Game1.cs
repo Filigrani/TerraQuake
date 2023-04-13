@@ -183,7 +183,7 @@ namespace BalloonInvasion
                 DebugText.Font = ContentManager.GetSprite("DebugFont");
             }
             TerrainInstance = new Terrain();
-            TerrainInstance.CreateTerrain(228);
+            TerrainInstance.CreateTerrain();
         }
 
         public int PreviousScroll = 0;

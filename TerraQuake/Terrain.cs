@@ -29,6 +29,7 @@ namespace TerraQuake
         public bool ManualUpdate = false;
         public bool UpdateTreadInterrupt = false;
         public bool UpdateThreadsCreated = false;
+        public Task UpdateTerrainThread = null;
         public bool TerrainHasBeenModified = false;
         public long LongetsUpdateMs = 0;
         public int LongetsRenderMs = 0;
@@ -404,7 +405,7 @@ namespace TerraQuake
             }
             return Color.SlateGray;
         }
-        public Color GetGravelColor()
+        public Color GetSnowGrassColor()
         {
             int Variant = GetRandomColor();
             if (Variant == 1)
@@ -619,6 +620,66 @@ namespace TerraQuake
 
             RenderTerrainBackground(ContentManager.Game.GraphicsDevice);
         }
+        public void SolidGeneratorFallable()
+        {
+            for (int i = 0; i < Pixels.Length; i++)
+            {
+                TerrainPixel Px = Pixels[i] = new TerrainPixel();
+                Px.Color = Color.AliceBlue;
+                Px.HasBackground = true;
+            }
+
+            RenderTerrainBackground(ContentManager.Game.GraphicsDevice);
+        }
+
+        public void SimpleGeneratorSnow()
+        {
+            for (int iY = 0; iY < TerrainH; iY++)
+            {
+                for (int iX = 0; iX < TerrainW; iX++)
+                {
+                    TerrainPixel Px = Pixels[GetIndex(iX, iY)] = new TerrainPixel();
+
+                    if(iY > 100)
+                    {
+                        if (iY < 250)
+                        {
+                            if (iY <= 140 + WorldGenRandom.Next(0, 10))
+                            {
+                                Px.Color = GetSnowGrassColor();
+                            } else
+                            {
+                                Px.Color = GetGroundColor();
+                                if (iY > 140 + WorldGenRandom.Next(0, 10))
+                                {
+                                    Px.HasBackground = true;
+                                }
+                            }
+                        } else if (iY >= 250 + WorldGenRandom.Next(0, 25))
+                        {
+                            Px.Color = GetStoneColor();
+                            Px.Fallable = false;
+                            Px.HasBackground = true;
+                        } else
+                        {
+                            Px.Color = GetGroundColor();
+                            Px.HasBackground = true;
+                        }
+                    } else
+                    {
+                        Px.Color = Color.Transparent;
+                    }
+                }
+            }
+
+            RenderTerrainBackground(ContentManager.Game.GraphicsDevice);
+
+            for (int i = 1; i != 20; i++)
+            {
+                AddPond(WorldGenRandom, 120);
+            }
+        }
+
         public void SimpleGenerator()
         {
             for (int iY = 0; iY < TerrainH; iY++)
@@ -661,6 +722,19 @@ namespace TerraQuake
         }
         public void CreateTerrain(int Seed = 0)
         {
+            if (UpdateThreadsCreated)
+            {
+                UpdateTreadInterrupt = true;
+                UpdateTerrainThread.Wait();
+                if (UpdateTerrainThread.IsCompleted)
+                {
+                    UpdateTerrainThread.Dispose();
+                }
+                UpdateThreadsCreated = false;
+                UpdateTreadInterrupt = false;
+            }
+            
+            
             ReadyForRender = false;
             if (Seed == 0)
             {
@@ -670,10 +744,12 @@ namespace TerraQuake
             WorldGenRandom = new Random(Seed);
             Pixels = new TerrainPixel[TerrainW * TerrainH];
 
-            SimpleGenerator();
+            //SimpleGenerator();
             //AdvancedGenerator();
             //HillsGenerator();
             //SolidGenerator();
+            //SolidGeneratorFallable();
+            SimpleGeneratorSnow();
             ReadyForRender = true;
             RenderTerrain(ContentManager.Game.GraphicsDevice);
         }
@@ -816,7 +892,7 @@ namespace TerraQuake
 
                     if (Dis <= Radius)
                     {
-                        Color Col = GetGravelColor();
+                        Color Col = GetSnowGrassColor();
                         TerrainPixel Px = GetPixel(iX, iY);
                         Px.Fallable = true;
                         Px.Color = Col;
@@ -826,10 +902,19 @@ namespace TerraQuake
             }
         }
 
-        public void AddPond(Random RNG)
+        public void AddPond(Random RNG, int HighestPond = -1)
         {
             int PondCenterX = RNG.Next(5, TerrainW);
-            int PondCenterY = RNG.Next(5, TerrainH);
+            int PondCenterY;
+
+            if(HighestPond != -1)
+            {
+                PondCenterY = RNG.Next(HighestPond, TerrainH);
+            } else
+            {
+                PondCenterY = RNG.Next(5, TerrainH);
+            }
+
             int Childs = 21;
             int MaxDistance = 20;
             for (int i = 1; i != Childs; i++)
@@ -1042,7 +1127,7 @@ namespace TerraQuake
             {
                 if (!UpdateThreadsCreated)
                 {
-                    Task.Factory.StartNew(FallingPixels);
+                    UpdateTerrainThread = Task.Factory.StartNew(FallingPixels);
                     UpdateThreadsCreated = true;
                 }
             }
