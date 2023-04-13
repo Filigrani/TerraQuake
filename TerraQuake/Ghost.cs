@@ -40,7 +40,7 @@ namespace BalloonInvasion
             {
                 if(Colision.Bottom - i >= 0)
                 {
-                    if(!Terra.Pixels[Terra.GetIndex(Side, Colision.Bottom - i)].IsAir())
+                    if (!Terra.GetPixel(Side, Colision.Bottom - i).IsAir())
                     {
                         HowMuch++;
                     }
