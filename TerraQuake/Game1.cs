@@ -83,6 +83,7 @@ namespace BalloonInvasion
             ContentManager.LoadSprite("GhostHands");
             ContentManager.LoadSprite("Shot");
             ContentManager.LoadSprite("TerrainTest");
+            ContentManager.LoadSprite("DebugWhite");
         }
         SpriteFont DebugText;
         internal Ghost MyGhost = null;
@@ -182,7 +183,7 @@ namespace BalloonInvasion
                 DebugText.Font = ContentManager.GetSprite("DebugFont");
             }
             TerrainInstance = new Terrain();
-            TerrainInstance.CreateTerrain();
+            TerrainInstance.CreateTerrain(228);
         }
 
         public int PreviousScroll = 0;
@@ -280,6 +281,9 @@ namespace BalloonInvasion
                 {
                     TerrainInstance.FallingPixels();
                 }
+            } else if (Key == Keys.K)
+            {
+                MyGhost.Object.Position = GetPointer();
             }
         }
 
