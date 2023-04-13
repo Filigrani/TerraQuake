@@ -1040,12 +1040,11 @@ namespace TerraQuake
         {
             if (!ManualUpdate && ReadyForRender)
             {
-                //if (!UpdateThreadsCreated)
-                //{
-                //    Task.Factory.StartNew(FallingPixels);
-                //    UpdateThreadsCreated = true;
-                //}
-                FallingPixels();
+                if (!UpdateThreadsCreated)
+                {
+                    Task.Factory.StartNew(FallingPixels);
+                    UpdateThreadsCreated = true;
+                }
             }
 
             if (Keyboard.GetState().IsKeyDown(Keys.U))
