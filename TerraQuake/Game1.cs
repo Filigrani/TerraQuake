@@ -285,9 +285,9 @@ namespace BalloonInvasion
         protected override void Update(GameTime gameTime)
         {
             //IsMouseVisible = false;
-            if(TerrainInstance != null)
+            if (TerrainInstance != null)
             {
-                TerrainInstance.Update(gameTime);
+                TerrainInstance.Update();
             }
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
             {
@@ -322,10 +322,10 @@ namespace BalloonInvasion
                 }
                 if (Keyboard.GetState().IsKeyDown(Keys.LeftControl))
                 {
-                    if (TerrainInstance != null && TerrainInstance.ManualUpdate)
-                    {
-                        TerrainInstance.FallingPixels();
-                    }
+                    //if (TerrainInstance != null && TerrainInstance.ManualUpdate)
+                    //{
+                    //    TerrainInstance.FallingPixels();
+                    //}
                 }
                 if (Keyboard.GetState().IsKeyDown(Keys.Space))
                 {
@@ -361,7 +361,6 @@ namespace BalloonInvasion
                 + "\nG " + MyGhost.OnGround + " L " + MyGhost.LeftBlocked + " R " + MyGhost.RightBlocked
                 + "\nLast Scan X " + TerrainInstance.LastScanX + " " + TerrainInstance.LastScanXEnd
                 + "\nLast Scan Y " + TerrainInstance.LastScanY + " " + TerrainInstance.LastScanYEnd
-                + "\nChanges " + TerrainInstance.PixelsChanged.Count
                 + "\nTotal pixels " + TerrainInstance.Pixels.LongLength
                 + "\nLast Hole X " + TerrainInstance.LastHole.X + " Y " + TerrainInstance.LastHole.Y
                 + "\nPos X " + MyGhost.Object.Position.X + " Y " + MyGhost.Object.Position.Y;
