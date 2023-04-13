@@ -687,26 +687,20 @@ namespace TerraQuake
             Color[] TextureData = new Color[texture.Width * texture.Height];
             texture.GetData(TextureData);
             Pixels = new TerrainPixel[TerrainW * TerrainH];
-            for (int iY = 0; iY < TerrainH; iY++)
+
+            for (int i = 0; i != TextureData.Length; i++)
             {
-                for (int iX = 0; iX < TerrainW; iX++)
-                {
-                    int index = GetIndex(iX, iY);
-                    Pixels[index] = new TerrainPixel();
-                    Pixels[index].Color = TextureData[index];
-                }
+                Pixels[i] = new TerrainPixel();
+                Pixels[i].Color = TextureData[i];
             }
             RenderTerrain(ContentManager.Game.GraphicsDevice);
         }
 
         public void HillsGenerator()
         {
-            for (int iY = 0; iY != TerrainH; iY++)
+            for (int i = 0; i != Pixels.Length; i++)
             {
-                for (int iX = 0; iX != TerrainW; iX++)
-                {
-                    Pixels[GetIndex(iX, iY)] = new TerrainPixel();
-                }
+                Pixels[i] = new TerrainPixel();
             }
             int Swap = 78;
             double Multi = WorldGenRandom.NextDouble() / Swap;
@@ -764,12 +758,9 @@ namespace TerraQuake
 
         public void AdvancedGenerator()
         {
-            for (int iY = 0; iY != TerrainH; iY++)
+            for (int i = 0; i != Pixels.Length; i++)
             {
-                for (int iX = 0; iX != TerrainW; iX++)
-                {
-                    Pixels[GetIndex(iX, iY)] = new TerrainPixel();
-                }
+                Pixels[i] = new TerrainPixel();
             }
             int HillHeigh = WorldGenRandom.Next(20, TerrainH);
             bool Up = true;
