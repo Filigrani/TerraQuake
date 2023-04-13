@@ -229,6 +229,18 @@
 /processorParam:TextureFormat=Color
 /build:Shot.png
 
+#begin SnowFlake0.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:SnowFlake0.png
+
 #begin Star1.png
 /importer:TextureImporter
 /processor:TextureProcessor

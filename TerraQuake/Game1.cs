@@ -46,10 +46,11 @@ namespace BalloonInvasion
         protected override void Initialize()
         {
             LayersManager.AddLayer("BG");
+            LayersManager.AddLayer("Weather").Parallax = new Vector2(30,10);
             LayersManager.AddLayer("Objects");
             LayersManager.AddLayer("Player");
 
-            bool Debug = true;
+            bool Debug = false;
 
             LayersManager.AddLayer("Debug").Visible = Debug;
 
@@ -84,12 +85,14 @@ namespace BalloonInvasion
             ContentManager.LoadSprite("Shot");
             ContentManager.LoadSprite("TerrainTest");
             ContentManager.LoadSprite("DebugWhite");
+            ContentManager.LoadSprite("SnowFlake0");
         }
         SpriteFont DebugText;
         internal Ghost MyGhost = null;
         public bool ClickPressed = false;
         public KeyboardState PreviousKeyboardState;
         internal Terrain TerrainInstance = null;
+        internal WeatherParticles Weather = null;
 
         internal GameObject CreateBalloon()
         {
@@ -184,6 +187,12 @@ namespace BalloonInvasion
             }
             TerrainInstance = new Terrain();
             TerrainInstance.CreateTerrain();
+
+            GameObject W = GameObjectManager.CreateObject();
+            WeatherParticles WCom = new WeatherParticles();
+            W.AddComponent(WCom);
+            Weather = WCom;
+            Weather.Terra = TerrainInstance;
         }
 
         public int PreviousScroll = 0;
@@ -356,7 +365,7 @@ namespace BalloonInvasion
         }
         protected override void Draw(GameTime gameTime)
         {
-            GraphicsDevice.Clear(Color.Orange);
+            GraphicsDevice.Clear(Color.SkyBlue);
 
             LayersManager.Render(gameTime);
             int Popped = (int)(0.5f + ((100f * Balloon.PopedBalloons) / Balloon.TotalBalloons));

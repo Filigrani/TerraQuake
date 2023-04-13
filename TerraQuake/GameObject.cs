@@ -128,7 +128,7 @@ namespace BalloonInvasion
                 return;
             }
             
-            foreach (var item in Components)
+            foreach (var item in Components.ToList())
             {
                 Dictionary<string, Component> Comps = item.Value;
                 foreach (var item2 in Comps)

@@ -405,6 +405,32 @@ namespace TerraQuake
             }
             return Color.SlateGray;
         }
+
+        public Color GetSnowColor()
+        {
+            int Variant = GetRandomColor();
+            if (Variant == 1)
+            {
+                return Color.OldLace;
+            } else if (Variant == 2)
+            {
+                return Color.MintCream;
+            } else if (Variant == 3)
+            {
+                return Color.Snow;
+            } else if (Variant == 4)
+            {
+                return Color.White;
+            } else if (Variant == 5)
+            {
+                return Color.GhostWhite;
+            } else if (Variant == 6)
+            {
+                return Color.Lavender;
+            }
+            return Color.SlateGray;
+        }
+
         public Color GetSnowGrassColor()
         {
             int Variant = GetRandomColor();
@@ -642,20 +668,20 @@ namespace TerraQuake
 
                     if(iY > 100)
                     {
-                        if (iY < 250)
+                        if (iY < 280)
                         {
-                            if (iY <= 140 + WorldGenRandom.Next(0, 10))
+                            if (iY <= 170 + WorldGenRandom.Next(0, 10))
                             {
                                 Px.Color = GetSnowGrassColor();
                             } else
                             {
                                 Px.Color = GetGroundColor();
-                                if (iY > 140 + WorldGenRandom.Next(0, 10))
+                                if (iY > 170 + WorldGenRandom.Next(0, 10))
                                 {
                                     Px.HasBackground = true;
                                 }
                             }
-                        } else if (iY >= 250 + WorldGenRandom.Next(0, 25))
+                        } else if (iY >= 280 + WorldGenRandom.Next(0, 25))
                         {
                             Px.Color = GetStoneColor();
                             Px.Fallable = false;
@@ -892,7 +918,7 @@ namespace TerraQuake
 
                     if (Dis <= Radius)
                     {
-                        Color Col = GetSnowGrassColor();
+                        Color Col = GetSnowColor();
                         TerrainPixel Px = GetPixel(iX, iY);
                         Px.Fallable = true;
                         Px.Color = Col;
