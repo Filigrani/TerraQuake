@@ -18,7 +18,7 @@ namespace TerraQuake
         public int TerrainW = 2050;
         public int TerrainH = 870;
 
-        public TerrainPixel[,] Pixels;
+        public TerrainPixel[] Pixels;
         public Color[] TerrainColorData;
         public Renderer Renderer = null;
         public Renderer RendererBackground = null;
@@ -53,6 +53,15 @@ namespace TerraQuake
             return false;
         }
 
+        public int GetIndex(int x, int y)
+        {
+            return (y * TerrainW + x);
+        }
+
+        public TerrainPixel GetPixel(int x, int y)
+        {
+
+        }
         public class TerrainPixel
         {
             public Color Color = Color.Transparent;
@@ -188,24 +197,6 @@ namespace TerraQuake
             return Val;
         }
 
-        public void ProcessPixelNew(int iX, int iY)
-        {
-            TerrainPixel Px = Pixels[iX, iY];
-            if (Px.Fallable)
-            {
-                TerrainPixel PxBelow = null;
-                if(iY + 1 != TerrainH)
-                {
-                    PxBelow = Pixels[iX, iY + 1];
-                    if (PxBelow.IsAir())
-                    {
-                        Px.MoveTo(PxBelow);
-                        Px.Delete();
-                    }
-                }
-            }
-        }
-
         //public void ProcessPixel(int iX, int iY)
         //{
         //    TerrainPixel Px = Pixels[iX, iY];
@@ -329,12 +320,12 @@ namespace TerraQuake
 
         public void ProcessPixel(int iX, int iY)
         {
-            TerrainPixel Px = Pixels[iX, iY];
+            TerrainPixel Px = Pixels[GetIndex(iX, iY)];
             if (Px.IsFallable()) // Pixel is dynamic.
             {
                 if (iY + 1 != TerrainH) // This is not last layer.
                 {
-                    TerrainPixel PxBelow = Pixels[iX, iY + 1];
+                    TerrainPixel PxBelow = Pixels[GetIndex(iX, iY +1)];
                     if (PxBelow.IsAir()) // Air below can fall down.
                     {
                         if (Px.Rolling == 0)
@@ -363,12 +354,12 @@ namespace TerraQuake
                         TerrainPixel PxLeft = null;
                         if (iX + 1 < TerrainW)
                         {
-                            PxRight = Pixels[iX + 1, iY];
+                            PxRight = Pixels[GetIndex(iX + 1, iY)];
                             CanRollRight = PxRight.IsAir();
                         }
                         if (iX - 1 >= 0)
                         {
-                            PxLeft = Pixels[iX - 1, iY];
+                            PxLeft = Pixels[GetIndex(iX - 1, iY)];
                             CanRollLeft = PxLeft.IsAir();
                         }
 
@@ -692,13 +683,13 @@ namespace TerraQuake
         public void CreateTerrainFromImage()
         {
             Color[,] TextureData = TextureTo2DArray(ContentManager.GetSprite("TerrainTest"));
-            Pixels = new TerrainPixel[TerrainW, TerrainH];
+            Pixels = new TerrainPixel[TerrainW * TerrainH];
             for (int iY = 0; iY < TerrainH; iY++)
             {
                 for (int iX = 0; iX < TerrainW; iX++)
                 {
-                    Pixels[iX, iY] = new TerrainPixel();
-                    Pixels[iX, iY].Color = TextureData[iX, iY];
+                    Pixels[GetIndex(iX, iY)] = new TerrainPixel();
+                    Pixels[GetIndex(iX, iY)].Color = TextureData[iX, iY];
                 }
             }
             RenderTerrain(ContentManager.Game.GraphicsDevice);
@@ -710,7 +701,7 @@ namespace TerraQuake
             {
                 for (int iX = 0; iX != TerrainW; iX++)
                 {
-                    Pixels[iX, iY] = new TerrainPixel();
+                    Pixels[GetIndex(iX, iY)] = new TerrainPixel();
                 }
             }
             int Swap = 78;
@@ -738,26 +729,26 @@ namespace TerraQuake
                     HillHeigh = TerrainH-1;
                 }
 
-                Pixels[iX, HillHeigh].Color = GetGrassColor();
+                Pixels[GetIndex(iX, HillHeigh)].Color = GetGrassColor();
                 int UnitsPlaced = 0;
                 for (int iY = HillHeigh; iY != TerrainH; iY++)
                 {
                     UnitsPlaced++;
                     if (UnitsPlaced <= 45)
                     {
-                        Pixels[iX, iY].Color = GetGrassColor();
+                        Pixels[GetIndex(iX, iY)].Color = GetGrassColor();
                     } else if (UnitsPlaced > 45 && UnitsPlaced < 145)
                     {
-                        Pixels[iX, iY].Color = GetGroundColor();
+                        Pixels[GetIndex(iX, iY)].Color = GetGroundColor();
                         if(UnitsPlaced > 60 + WorldGenRandom.Next(0, 20))
                         {
-                            Pixels[iX, iY].HasBackground = true;
+                            Pixels[GetIndex(iX, iY)].HasBackground = true;
                         }
                     } else
                     {
-                        Pixels[iX, iY].Color = GetStoneColor();
-                        Pixels[iX, iY].Fallable = false;
-                        Pixels[iX, iY].HasBackground = true;
+                        Pixels[GetIndex(iX, iY)].Color = GetStoneColor();
+                        Pixels[GetIndex(iX, iY)].Fallable = false;
+                        Pixels[GetIndex(iX, iY)].HasBackground = true;
                     }
                 }
             }
@@ -770,7 +761,7 @@ namespace TerraQuake
             {
                 for (int iX = 0; iX != TerrainW; iX++)
                 {
-                    Pixels[iX, iY] = new TerrainPixel();
+                    Pixels[GetIndex(iX, iY)] = new TerrainPixel();
                 }
             }
             int HillHeigh = WorldGenRandom.Next(20, TerrainH);
@@ -801,20 +792,20 @@ namespace TerraQuake
                     HillHeigh = TerrainH - 1;
                 }
 
-                Pixels[iX, HillHeigh].Color = GetGrassColor();
+                Pixels[GetIndex(iX, HillHeigh)].Color = GetGrassColor();
                 int UnitsPlaced = 0;
                 for (int iY = HillHeigh; iY != TerrainH; iY++)
                 {
                     UnitsPlaced++;
                     if (UnitsPlaced < 40)
                     {
-                        Pixels[iX, iY].Color = GetGrassColor();
+                        Pixels[GetIndex(iX, iY)].Color = GetGrassColor();
                     } else if (UnitsPlaced > 40 && UnitsPlaced < 140)
                     {
-                        Pixels[iX, iY].Color = GetGroundColor();
+                        Pixels[GetIndex(iX, iY)].Color = GetGroundColor();
                     } else
                     {
-                        Pixels[iX, iY].Color = GetStoneColor();
+                        Pixels[GetIndex(iX, iY)].Color = GetStoneColor();
                     }
                 }
             }
@@ -825,7 +816,7 @@ namespace TerraQuake
             {
                 for (int iX = 0; iX < TerrainW; iX++)
                 {
-                    TerrainPixel Px = Pixels[iX, iY] = new TerrainPixel();
+                    TerrainPixel Px = Pixels[GetIndex(iX, iY)] = new TerrainPixel();
                     if (iY < 150)
                     {
                         Px.Color = Color.AliceBlue;
@@ -847,7 +838,7 @@ namespace TerraQuake
             {
                 for (int iX = 0; iX < TerrainW; iX++)
                 {
-                    TerrainPixel Px = Pixels[iX, iY] = new TerrainPixel();
+                    TerrainPixel Px = Pixels[GetIndex(iX, iY)] = new TerrainPixel();
                     if (iY < 150)
                     {
                         if (iY <= 40 + WorldGenRandom.Next(0, 20))
@@ -891,7 +882,7 @@ namespace TerraQuake
             }
             ShuffleRandom = new Random(Seed);
             WorldGenRandom = new Random(Seed);
-            Pixels = new TerrainPixel[TerrainW, TerrainH];
+            Pixels = new TerrainPixel[TerrainW * TerrainH];
 
             SimpleGenerator();
             //AdvancedGenerator();
@@ -960,7 +951,7 @@ namespace TerraQuake
 
                     if (Dis <= Radius)
                     {
-                        Pixels[iX, iY].Delete();
+                        Pixels[GetIndex(iX, iY)].Delete();
                         AddChangedPixel(iX, iY, Color.Transparent);
 
                         if(iY -1 != -1) // Something can be above.
@@ -971,7 +962,7 @@ namespace TerraQuake
 
                             if(DisAbovPx > Radius) // Distance check failed, this is edge pixel!
                             {
-                                if(Pixels[iX, iY - 1].IsFallable())
+                                if(Pixels[GetIndex(iX, iY - 1)].IsFallable())
                                 {
                                     AddProcessPixel(iX, iY - 1);
                                 }
@@ -988,9 +979,9 @@ namespace TerraQuake
             {
                 return;
             }
-            Pixels[X, Y].Fallable = true;
-            Pixels[X, Y].Water = true;
-            Pixels[X, Y].Color = GetWaterColor();
+            Pixels[GetIndex(X, Y)].Fallable = true;
+            Pixels[GetIndex(X, Y)].Water = true;
+            Pixels[GetIndex(X, Y)].Color = GetWaterColor();
         }
 
         public void MakeDirt(int X, int Y, int Radius)
@@ -1038,10 +1029,10 @@ namespace TerraQuake
 
                     if (Dis <= Radius)
                     {
-                        Pixels[iX, iY].Fallable = true;
+                        Pixels[GetIndex(iX, iY)].Fallable = true;
 
                         Color Col = GetGravelColor();
-                        Pixels[iX, iY].Color = Col;
+                        Pixels[GetIndex(iX, iY)].Color = Col;
                         AddChangedPixel(iX, iY, Col);
                     }
                 }
@@ -1103,8 +1094,8 @@ namespace TerraQuake
                         float Dis = MathF.Sqrt(num * num + num2 * num2);
                         if (Dis <= Radius)
                         {
-                            Pixels[iX, iY].Color = GetWaterColor();
-                            Pixels[iX, iY].Water = true;
+                            Pixels[GetIndex(iX, iY)].Color = GetWaterColor();
+                            Pixels[GetIndex(iX, iY)].Water = true;
                         }
                     }
                 }
@@ -1133,9 +1124,9 @@ namespace TerraQuake
                     ColorX = 0;
                     ColorY++;
                 }
-                if (Pixels[ColorX, ColorY].HasBackground)
+                if (Pixels[Index].HasBackground)
                 {
-                    BackgroundColorData[Index] = Pixels[ColorX, ColorY].Color;
+                    BackgroundColorData[Index] = Pixels[Index].Color;
                 }
                 Index++;
                 ColorX++;
@@ -1159,7 +1150,7 @@ namespace TerraQuake
                     ColorX = 0;
                     ColorY++;
                 }
-                Color PixelColor = Pixels[ColorX, ColorY].Color;
+                Color PixelColor = Pixels[Index].Color;
                 if(PixelColor != Color.Transparent)
                 {
                     TerrainColorData[Index] = PixelColor;
@@ -1240,7 +1231,7 @@ namespace TerraQuake
             {
                 for (int y = StartY; y < EndY; y++)
                 {
-                    if (!Pixels[x, y].IsAir() && !Pixels[x, y].IsWater())
+                    if (!Pixels[GetIndex(x, y)].IsAir() && !Pixels[GetIndex(x, y)].IsWater())
                     {
                         Rectangle PixelBounds = new Rectangle(x, y, 1, 1);
 
