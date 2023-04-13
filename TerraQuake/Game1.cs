@@ -260,6 +260,7 @@ namespace BalloonInvasion
                 }
             }else if(Key == Keys.B)
             {
+                TerrainInstance.LongetsUpdateMs = 0;
                 TerrainInstance.BenchHoles();
             } else if (Key == Keys.R)
             {
@@ -361,7 +362,7 @@ namespace BalloonInvasion
                 + "\nG " + MyGhost.OnGround + " L " + MyGhost.LeftBlocked + " R " + MyGhost.RightBlocked
                 + "\nLast Scan X " + TerrainInstance.LastScanX + " " + TerrainInstance.LastScanXEnd
                 + "\nLast Scan Y " + TerrainInstance.LastScanY + " " + TerrainInstance.LastScanYEnd
-                + "\nTotal pixels " + TerrainInstance.Pixels.LongLength
+                + "\nLongest Update " + TerrainInstance.LongetsUpdateMs + "ms"
                 + "\nLast Hole X " + TerrainInstance.LastHole.X + " Y " + TerrainInstance.LastHole.Y
                 + "\nPos X " + MyGhost.Object.Position.X + " Y " + MyGhost.Object.Position.Y;
             DebugText.SetText(Text);

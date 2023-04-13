@@ -27,9 +27,6 @@ namespace TerraQuake
         public bool NoRenderUpdate = false;
         public bool ReadyForRender = false;
         public bool ManualUpdate = false;
-        public bool NoRolling = false;
-        public bool NoWaterFlow = false;
-        public bool NoAbovePing = true;
         public Task UpdateThread = null;
         public bool UpdateTreadInterrupt = false;
         public bool TerrainHasBeenModified = false;
@@ -71,7 +68,7 @@ namespace TerraQuake
                 Color = Color.Transparent;
                 Rolling = 0;
                 RollingDir = 0;
-                Fallable = true;
+                Fallable = false;
                 Water = false;
             }
 
@@ -152,12 +149,6 @@ namespace TerraQuake
 
         public int GetRandomRollingNums()
         {
-            if (NoRolling)
-            {
-                return 0;
-            }
-            
-            
             if (LastRandomRollingNumsIndex == 33)
             {
                 LastRandomRollingNumsIndex = 0;
@@ -545,6 +536,9 @@ namespace TerraQuake
         {
             while (!UpdateTreadInterrupt)
             {
+                Stopwatch sp = new Stopwatch();
+                sp.Start();
+
                 for (int iY = TerrainH - 1; iY != -1; iY--)
                 {
                     if (ScanDirectionRight)
@@ -562,6 +556,12 @@ namespace TerraQuake
                     }
                 }
                 ScanDirectionRight = !ScanDirectionRight;
+
+                if (sp.ElapsedMilliseconds > LongetsUpdateMs)
+                {
+                    LongetsUpdateMs = sp.Elapsed.Milliseconds;
+                }
+                sp.Stop();
             }
         }
 
@@ -1111,7 +1111,7 @@ namespace TerraQuake
             }
         }
 
-        public void RenderTerrainChanges(TerrainPixel[,] Pixs)
+        public void RenderTerrainChanges()
         {
             if (TerrainColorData == null)
             {
@@ -1256,9 +1256,6 @@ namespace TerraQuake
 
         public void Update()
         {
-            Stopwatch sp = new Stopwatch();
-            sp.Start();
-
             if (!ManualUpdate && ReadyForRender)
             {
                 if (UpdateThread == null)
@@ -1270,15 +1267,6 @@ namespace TerraQuake
                     UpdateThread = Task.Factory.StartNew(FallingPixels);
                 }
             }
-            if (sp.ElapsedMilliseconds > LongetsUpdateMs)
-            {
-                LongetsUpdateMs = sp.Elapsed.Milliseconds;
-            }
-            sp.Stop();
-            //foreach (var item in TerrainSegments)
-            //{
-            //    item.Value.Renderer.Visible = !Keyboard.GetState().IsKeyDown(Keys.N);
-            //}
 
             if (Keyboard.GetState().IsKeyDown(Keys.U))
             {
@@ -1313,7 +1301,7 @@ namespace TerraQuake
             }
             if (TerrainHasBeenModified)
             {
-                RenderTerrainChanges(Pixels.Clone() as TerrainPixel[,]);
+                RenderTerrainChanges();
                 TerrainHasBeenModified = false;
             }
         }
