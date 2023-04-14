@@ -7,7 +7,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace BalloonInvasion
+namespace TerraQuake
 {
     internal class Collision : Component
     {

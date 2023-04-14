@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Linq;
 
-namespace BalloonInvasion
+namespace TerraQuake
 {
     internal class Animator : Component
     {

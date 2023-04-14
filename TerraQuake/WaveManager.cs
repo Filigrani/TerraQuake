@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace BalloonInvasion
+namespace TerraQuake
 {
     public static class WaveManager
     {

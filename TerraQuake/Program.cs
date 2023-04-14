@@ -1,3 +1,2 @@
-﻿
-using var game = new BalloonInvasion.Game1();
+﻿TerraQuake.GameInstance game = new TerraQuake.GameInstance();
 game.Run();

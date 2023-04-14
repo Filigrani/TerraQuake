@@ -7,9 +7,9 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using TerraQuake;
 
-namespace BalloonInvasion
+namespace TerraQuake
 {
-    public class Game1 : Game
+    public class GameInstance : Game
     {
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
@@ -32,7 +32,7 @@ namespace BalloonInvasion
             }
         }
 
-        public Game1()
+        public GameInstance()
         {
             _graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";

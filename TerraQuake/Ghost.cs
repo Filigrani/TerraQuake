@@ -10,7 +10,7 @@ using System.Drawing;
 using System.Threading;
 using TerraQuake;
 
-namespace BalloonInvasion
+namespace TerraQuake
 {
     internal class Ghost : Component
     {

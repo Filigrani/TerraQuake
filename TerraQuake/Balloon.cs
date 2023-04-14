@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Drawing;
 
-namespace BalloonInvasion
+namespace TerraQuake
 {
     internal class Balloon : Component
     {

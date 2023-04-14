@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using static System.Net.Mime.MediaTypeNames;
 
-namespace BalloonInvasion
+namespace TerraQuake
 {
     internal class PlayerController : Component
     {

@@ -5,12 +5,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace BalloonInvasion
+namespace TerraQuake
 {
     public class ContentManager
     {
         public static Dictionary<string, Texture2D> Sprites = new Dictionary<string, Texture2D>();
-        public static Game1 Game;
+        public static GameInstance Game;
         public static SpriteBatch SpriteBatch;
 
         public static Texture2D LoadSprite(string Name)
