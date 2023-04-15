@@ -37,10 +37,10 @@ namespace TerraQuake
         public ulong CurrentAge = 0;
         public bool UseHistory = false;
         public List<Chunk> Chunks = new List<Chunk>();
-
+        public ushort ChunksRow = 0;
         public class Chunk
         {
-            public bool RequiredUpdate = 0;
+            public bool RequiredUpdate = false;
             public bool RequiredUpdateNextFrame = false;
             public Rectangle Rect = Rectangle.Empty;
             public Renderer DebugRenderer = null;
@@ -111,7 +111,11 @@ namespace TerraQuake
             public bool Water = false;
             public bool HasBackground = false;
             public bool SkipProcess = false;
-
+            public int ChunkID = -1;
+            public int ChunkLeftID = -1;
+            public int ChunkRightID = -1;
+            public int ChunkTopID = -1;
+            public int ChunkBottomID = -1;
             public void Delete()
             {
                 Color = Color.Transparent;
@@ -167,28 +171,38 @@ namespace TerraQuake
             }
         }
 
-        public void AddProcessPixel(int X, int Y)
+        public void AddProcessPixel(TerrainPixel Px)
         {
-            Rectangle PixelRect = new Rectangle(X, Y, 50, 50);
-            
-            foreach (Chunk C in Chunks)
+            int ID = Px.ChunkID;
+            int LID = Px.ChunkLeftID;
+            int RID = Px.ChunkRightID;
+            int TID = Px.ChunkTopID;
+            int BID = Px.ChunkBottomID;
+
+            if (ID != -1)
             {
-                if (C.Rect.Intersects(PixelRect))
-                {
-                    C.RequiredUpdateNextFrame = true;
-                }
+                Chunks[ID].RequiredUpdateNextFrame = true;
+            }
+            if(LID != -1)
+            {
+                Chunks[LID].RequiredUpdateNextFrame = true;
+            }
+            if (RID != -1)
+            {
+                Chunks[RID].RequiredUpdateNextFrame = true;
+            }
+            if (TID != -1)
+            {
+                Chunks[TID].RequiredUpdateNextFrame = true;
+            }
+            if (BID != -1)
+            {
+                Chunks[BID].RequiredUpdateNextFrame = true;
             }
         }
-
-        public void AddProcessArea(Rectangle Rect)
+        public void AddProcessPixel(int iX, int iY)
         {
-            foreach (Chunk C in Chunks)
-            {
-                if (C.Rect.Intersects(Rect))
-                {
-                    C.RequiredUpdateNextFrame = true;
-                }
-            }
+            AddProcessPixel(GetPixel(iX, iY));
         }
 
         public void AddChangedPixel(int X, int Y, Color Col)
@@ -288,8 +302,8 @@ namespace TerraQuake
                             // Re-render this pixels
                             AddChangedPixel(iX, iY, Color.Transparent);
                             AddChangedPixel(iX, iY + 1, PxBelow.Color);
-                            AddProcessPixel(iX, iY);
-                            AddProcessPixel(iX, iY+1);
+                            AddProcessPixel(Px);
+                            AddProcessPixel(PxBelow);
                             Fall++;
                             Px = PxBelow;
                             iY++;
@@ -343,7 +357,6 @@ namespace TerraQuake
                             {
                                 Px.Rolling = 0;
                                 Px.RollingDir = 0;
-                                AddProcessPixel(iX, iY);
                             }
                             int Dir = Px.RollingDir;
 
@@ -355,8 +368,8 @@ namespace TerraQuake
                                     Px.Delete();
                                     AddChangedPixel(iX + Dir, iY, PxRight.Color);
                                     AddChangedPixel(iX, iY, Color.Transparent);
-                                    AddProcessPixel(iX, iY);
-                                    AddProcessPixel(iX + Dir, iY);
+                                    AddProcessPixel(Px);
+                                    AddProcessPixel(PxRight);
                                     Px = PxRight;
                                     iX ++;
                                 } else
@@ -365,8 +378,8 @@ namespace TerraQuake
                                     Px.Delete();
                                     AddChangedPixel(iX + Dir, iY, PxLeft.Color);
                                     AddChangedPixel(iX, iY, Color.Transparent);
-                                    AddProcessPixel(iX, iY);
-                                    AddProcessPixel(iX + Dir, iY);
+                                    AddProcessPixel(Px);
+                                    AddProcessPixel(PxLeft);
                                     Px = PxLeft;
                                     iX--;
                                 }
@@ -425,6 +438,11 @@ namespace TerraQuake
             int StartY = C.Rect.Bottom;
             int EndY = C.Rect.Top;
 
+            if(StartY == TerrainH)
+            {
+                StartY = TerrainH-1;
+            }
+
             for (int iY = StartY; iY != EndY; iY--)
             {
                 if (ScanDirectionRight)
@@ -435,7 +453,7 @@ namespace TerraQuake
                     }
                 } else
                 {
-                    for (int iX = EndX; iX != StartX; iX--)
+                    for (int iX = EndX-1; iX != StartX; iX--)
                     {
                         ProcessPixel(iX, iY);
                     }
@@ -598,7 +616,7 @@ namespace TerraQuake
 
         public void CreateTerrainFromImage()
         {
-            Texture2D texture = ContentManager.GetSprite("TerrainTest");
+            Texture2D texture = ContentManager.GetSprite("DebugWhite");
             Color[] TextureData = new Color[texture.Width * texture.Height];
             texture.GetData(TextureData);
             Pixels = new TerrainPixel[TerrainW * TerrainH];
@@ -859,14 +877,16 @@ namespace TerraQuake
             int ColorIndex = 0;
             Texture2D DebugTex = ContentManager.GetSprite("DebugWhite");
             Chunks.Clear();
-            int ChunkW = 100;
-            int ChunkH = 100;
+            int ChunkW = 20;
+            int ChunkH = 20;
             int X = 0;
             int Y = 0;
+            ChunksRow = (ushort) Math.Ceiling((double)TerrainW / ChunkW);
             while (true)
             {
                 int W = ChunkW;
                 int H = ChunkH;
+
                 if(X+W >= TerrainW)
                 {
                     W = TerrainW - X;
@@ -893,17 +913,47 @@ namespace TerraQuake
                 GameObject ChunkDebug = GameObjectManager.CreateObject();
                 Renderer Rend = new Renderer("Debug");
                 Rend.SetSprite(DebugTex, new Rectangle(0, 0, W, H));
-                Rend.Tint = Colors[ColorIndex];
                 ColorIndex++;
                 if (ColorIndex == Colors.Length)
                 {
                     ColorIndex = 0;
                 }
+                Rend.Tint = Color.Aqua;
+                //Rend.Tint = Colors[ColorIndex];
                 ChunkDebug.AddComponent(Rend);
                 ChunkDebug.Position = new Vector2(Rect.X, Rect.Y);
                 C.DebugRenderer = Rend;
                 Chunks.Add(C);
 
+                int StartX = C.Rect.Left;
+                int EndX = C.Rect.Right - 1;
+                int StartY = C.Rect.Bottom-1;
+                int EndY = C.Rect.Top;
+                int ChunkID = Chunks.Count - 1;
+                for (int iY = StartY; iY != EndY; iY--)
+                {
+                    for (int iX = StartX; iX != EndX; iX++)
+                    {
+                        TerrainPixel Px = GetPixel(iX, iY);
+                        Px.ChunkID = ChunkID;
+                        if(StartX != 0)
+                        {
+                            Px.ChunkLeftID = ChunkID - 1;
+                        }
+                        if(EndX != TerrainW-1)
+                        {
+                            Px.ChunkRightID = ChunkID + 1;
+                        }
+                        if(EndY != 0)
+                        {
+                            Px.ChunkTopID = ChunkID - ChunksRow;
+                        }
+                        if(StartY != TerrainH-1)
+                        {
+                            Px.ChunkBottomID = ChunkID + ChunksRow;
+                        }
+                    }
+                }
                 X += W;
             }
         }
@@ -932,9 +982,6 @@ namespace TerraQuake
             ShuffleRandom = new Random(Seed);
             WorldGenRandom = new Random(Seed);
             Pixels = new TerrainPixel[TerrainW * TerrainH];
-
-            LocateChunks();
-
             //SimpleGenerator();
             //AdvancedGenerator();
             //HillsGenerator();
@@ -942,6 +989,7 @@ namespace TerraQuake
             //SolidGeneratorFallable();
             SimpleGeneratorSnow();
             ReadyForRender = true;
+            LocateChunks();
             RenderTerrain(ContentManager.Game.GraphicsDevice);
         }
 
@@ -1004,7 +1052,8 @@ namespace TerraQuake
 
                     if (Dis <= Radius)
                     {
-                        GetPixel(iX, iY).Delete();
+                        TerrainPixel Px = GetPixel(iX, iY);
+                        Px.Delete();
                         AddChangedPixel(iX, iY, Color.Transparent);
 
                         if(iY -1 != -1) // Something can be above.
@@ -1017,7 +1066,7 @@ namespace TerraQuake
                             {
                                 if(GetPixel(iX, iY - 1).IsFallable())
                                 {
-                                    AddProcessPixel(iX, iY - 1);
+                                    AddProcessPixel(Px);
                                 }
                             }
                         }
@@ -1038,10 +1087,10 @@ namespace TerraQuake
             Px.Fallable = true;
             Px.Water = true;
             Px.Color = GetWaterColor();
-            AddProcessPixel(X, Y);
+            AddProcessPixel(Px);
         }
 
-        public void MakeDirt(int X, int Y, int Radius)
+        public void MakeSnow(int X, int Y, int Radius)
         {
             int StartX = X - Radius;
             int EndX = X + Radius;
@@ -1091,7 +1140,64 @@ namespace TerraQuake
                         Px.Fallable = true;
                         Px.Color = Col;
                         AddChangedPixel(iX, iY, Col);
-                        AddProcessPixel(iX, iY);
+                        AddProcessPixel(Px);
+                    }
+                }
+            }
+        }
+
+        public void MakeWater(int X, int Y, int Radius)
+        {
+            int StartX = X - Radius;
+            int EndX = X + Radius;
+            int StartY = Y - Radius;
+            int EndY = Y + Radius;
+
+            if (StartX < 0)
+            {
+                StartX = 0;
+            } else if (StartX > TerrainW)
+            {
+                StartX = TerrainW;
+            }
+            if (EndX < 0)
+            {
+                EndX = 0;
+            } else if (EndX > TerrainW)
+            {
+                EndX = TerrainW;
+            }
+            if (StartY < 0)
+            {
+                StartY = 0;
+            } else if (StartY > TerrainH)
+            {
+                StartY = TerrainH;
+            }
+            if (EndY < 0)
+            {
+                EndY = 0;
+            } else if (EndY > TerrainH)
+            {
+                EndY = TerrainH;
+            }
+            for (int iY = StartY; iY != EndY; iY++)
+            {
+                for (int iX = StartX; iX != EndX; iX++)
+                {
+                    int num = iX - X;
+                    int num2 = iY - Y;
+                    float Dis = MathF.Sqrt(num * num + num2 * num2);
+
+                    if (Dis <= Radius)
+                    {
+                        Color Col = GetWaterColor();
+                        TerrainPixel Px = GetPixel(iX, iY);
+                        Px.Fallable = true;
+                        Px.Water = true;
+                        Px.Color = Col;
+                        AddChangedPixel(iX, iY, Col);
+                        AddProcessPixel(Px);
                     }
                 }
             }
@@ -1365,7 +1471,7 @@ namespace TerraQuake
                 
                 int X = (int)P.X;
                 int Y = (int)P.Y;
-                MakeWater(X, Y);
+                MakeWater(X, Y, 3);
             }
         }
 

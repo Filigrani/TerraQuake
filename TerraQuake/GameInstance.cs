@@ -222,7 +222,7 @@ namespace TerraQuake
 
         public void KeyPress(Keys Key, GameTime gameTime)
         {
-            if(Key == Keys.Down)
+            if (Key == Keys.Down)
             {
                 foreach (Animator Animator in Animator.Animators)
                 {
@@ -234,21 +234,21 @@ namespace TerraQuake
                         }
                     }
                 }
-            } else if(Key == Keys.Up)
+            } else if (Key == Keys.Up)
             {
                 foreach (Animator Animator in Animator.Animators)
                 {
                     if (Animator.ByFrameDebug)
                     {
-                        if(Animator.CurrentAnimation != null)
+                        if (Animator.CurrentAnimation != null)
                         {
                             Animator.CurrentAnimation.DoNextFrame(gameTime);
                         }
                     }
                 }
-            }else if(Key == Keys.F11 || Key == Keys.F)
+            } else if (Key == Keys.F11 || Key == Keys.F)
             {
-                if(_graphics.IsFullScreen == true)
+                if (_graphics.IsFullScreen == true)
                 {
                     ApplyReolustion(960, 540, false);
                     _graphics.IsFullScreen = false;
@@ -261,16 +261,16 @@ namespace TerraQuake
                     LayersManager.Scaler = 2;
                     _graphics.ApplyChanges();
                 }
-            }else if(Key == Keys.T)
+            } else if (Key == Keys.T)
             {
-                if(TerrainInstance != null)
+                if (TerrainInstance != null)
                 {
                     int X = (int)GetPointer().X;
                     int Y = (int)GetPointer().Y;
 
                     TerrainInstance.MakeHole(X, Y, 40);
                 }
-            }else if(Key == Keys.B)
+            } else if (Key == Keys.B)
             {
                 TerrainInstance.LongetsUpdateMs = 0;
                 TerrainInstance.BenchHoles();
@@ -284,7 +284,7 @@ namespace TerraQuake
                     int X = (int)GetPointer().X;
                     int Y = (int)GetPointer().Y;
 
-                    TerrainInstance.MakeDirt(X, Y, 10);
+                    TerrainInstance.MakeSnow(X, Y, 10);
                 }
             } else if (Key == Keys.LeftShift)
             {
@@ -303,14 +303,13 @@ namespace TerraQuake
                 //    File.Create("TerrainHistory");
                 //}
                 //File.WriteAllText("TerrainHistory", SaveData);
-            }else if(Key == Keys.F9)
+            } else if (Key == Keys.F9)
             {
                 //string SaveData = File.ReadAllText("TerrainHistory");
                 //TerrainInstance.TerrainHistory = JsonSerializer.Deserialize<List<Terrain.TerrainHistoryEvent>>(SaveData);
                 //TerrainInstance.ResumeHistory();
             }
         }
-
         protected override void Update(GameTime gameTime)
         {
             //IsMouseVisible = false;
@@ -391,6 +390,7 @@ namespace TerraQuake
                 + "\nLast Scan X " + TerrainInstance.LastScanX + " " + TerrainInstance.LastScanXEnd
                 + "\nLast Scan Y " + TerrainInstance.LastScanY + " " + TerrainInstance.LastScanYEnd
                 + "\nLongest Update " + TerrainInstance.LongetsUpdateMs + "ms"
+                + "\nChunks " + TerrainInstance.Chunks.Count + " ChunkRow "+ TerrainInstance.ChunksRow
                 + "\nLast Hole X " + TerrainInstance.LastHole.X + " Y " + TerrainInstance.LastHole.Y
                 + "\nPos X " + MyGhost.Object.Position.X + " Y " + MyGhost.Object.Position.Y;
             DebugText.SetText(Text);
