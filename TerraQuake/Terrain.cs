@@ -157,20 +157,6 @@ namespace TerraQuake
             }
         }
 
-        public class ProcessPixelElement
-        {
-            public int X = 0;
-            public int Y = 0;
-            public int Priority = 0;
-
-            public ProcessPixelElement(int x, int y, int height)
-            {
-                X = x; 
-                Y = y;
-                Priority = (height - y + 1) * x;
-            }
-        }
-
         public void AddProcessPixel(TerrainPixel Px)
         {
             int ID = Px.ChunkID;
