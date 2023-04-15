@@ -40,7 +40,7 @@ namespace TerraQuake
 
         public class Chunk
         {
-            public ushort RequiredUpdate = 0;
+            public bool RequiredUpdate = 0;
             public bool RequiredUpdateNextFrame = false;
             public Rectangle Rect = Rectangle.Empty;
             public Renderer DebugRenderer = null;
