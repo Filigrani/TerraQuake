@@ -9,7 +9,8 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System.Diagnostics;
-using System.ComponentModel.DataAnnotations;
+using System.Net.Cache;
+using Newtonsoft.Json.Linq;
 
 namespace TerraQuake
 {
@@ -23,7 +24,6 @@ namespace TerraQuake
         public Renderer Renderer = null;
         public Renderer RendererBackground = null;
         public GameObject TerrainObject = null;
-        public List<ProcessPixelElement> ProcessQueue = new List<ProcessPixelElement>();
         public bool NoRenderUpdate = false;
         public bool ReadyForRender = false;
         public bool ManualUpdate = false;
@@ -33,6 +33,53 @@ namespace TerraQuake
         public bool TerrainHasBeenModified = false;
         public long LongetsUpdateMs = 0;
         public int LongetsRenderMs = 0;
+        public List<TerrainHistoryEvent> TerrainHistory = new List<TerrainHistoryEvent>();
+        public ulong CurrentAge = 0;
+        public bool UseHistory = false;
+        public List<Chunk> Chunks = new List<Chunk>();
+
+        public class Chunk
+        {
+            public ushort RequiredUpdate = 0;
+            public bool RequiredUpdateNextFrame = false;
+            public Rectangle Rect = Rectangle.Empty;
+            public Renderer DebugRenderer = null;
+
+            public Chunk(Rectangle rect)
+            {
+                Rect = rect;
+            }
+
+        }
+        public enum HistoryEventType
+        {
+            None,
+            Hole,
+            Snow,
+        }
+        public class TerrainHistoryEvent
+        {
+            public ulong Age = 0;
+            public HistoryEventType Event = HistoryEventType.None;
+            public Point Position = new Point();
+            public ushort Radius = 0;
+        }
+
+        public void ResumeHistory()
+        {
+            UseHistory = true;
+        }
+
+        public void AddHoleToHistory(int X, int Y, int Radius)
+        {
+            TerrainHistoryEvent E = new TerrainHistoryEvent();
+            E.Event = HistoryEventType.Hole;
+            E.Age = CurrentAge;
+            E.Position.X = X; 
+            E.Position.Y = Y;
+            E.Radius = Convert.ToUInt16(Radius);
+            TerrainHistory.Add(E);
+        }
 
         public Terrain()
         {
@@ -122,7 +169,26 @@ namespace TerraQuake
 
         public void AddProcessPixel(int X, int Y)
         {
-            ProcessQueue.Add(new ProcessPixelElement(X, Y, TerrainH));
+            Rectangle PixelRect = new Rectangle(X, Y, 50, 50);
+            
+            foreach (Chunk C in Chunks)
+            {
+                if (C.Rect.Intersects(PixelRect))
+                {
+                    C.RequiredUpdateNextFrame = true;
+                }
+            }
+        }
+
+        public void AddProcessArea(Rectangle Rect)
+        {
+            foreach (Chunk C in Chunks)
+            {
+                if (C.Rect.Intersects(Rect))
+                {
+                    C.RequiredUpdateNextFrame = true;
+                }
+            }
         }
 
         public void AddChangedPixel(int X, int Y, Color Col)
@@ -131,6 +197,7 @@ namespace TerraQuake
             TerrainColorData[Index] = Col;
 
             TerrainHasBeenModified = true;
+            CurrentAge++;
         }
 
         readonly int[] RandomDirections = { -1, 0, 0, -1, -1, 0, 0, -1, 0, -1, -1, -1, -1, -1, -1, 0, -1, -1, -1, -1, 0, -1, -1, 0, 0, 0, -1, 0, -1, 0, 0 };
@@ -190,8 +257,7 @@ namespace TerraQuake
             return Val;
         }
 
-        public const int PixelMoveSpeed = 4;
-
+        public const int PixelMoveSpeed = 1;
         public void ProcessPixel(int iX, int iY)
         {
             TerrainPixel Px = GetPixel(iX, iY);
@@ -222,6 +288,8 @@ namespace TerraQuake
                             // Re-render this pixels
                             AddChangedPixel(iX, iY, Color.Transparent);
                             AddChangedPixel(iX, iY + 1, PxBelow.Color);
+                            AddProcessPixel(iX, iY);
+                            AddProcessPixel(iX, iY+1);
                             Fall++;
                             Px = PxBelow;
                             iY++;
@@ -275,6 +343,7 @@ namespace TerraQuake
                             {
                                 Px.Rolling = 0;
                                 Px.RollingDir = 0;
+                                AddProcessPixel(iX, iY);
                             }
                             int Dir = Px.RollingDir;
 
@@ -286,6 +355,8 @@ namespace TerraQuake
                                     Px.Delete();
                                     AddChangedPixel(iX + Dir, iY, PxRight.Color);
                                     AddChangedPixel(iX, iY, Color.Transparent);
+                                    AddProcessPixel(iX, iY);
+                                    AddProcessPixel(iX + Dir, iY);
                                     Px = PxRight;
                                     iX ++;
                                 } else
@@ -294,6 +365,8 @@ namespace TerraQuake
                                     Px.Delete();
                                     AddChangedPixel(iX + Dir, iY, PxLeft.Color);
                                     AddChangedPixel(iX, iY, Color.Transparent);
+                                    AddProcessPixel(iX, iY);
+                                    AddProcessPixel(iX + Dir, iY);
                                     Px = PxLeft;
                                     iX--;
                                 }
@@ -343,6 +416,34 @@ namespace TerraQuake
                 }
                 sp.Stop();
             }
+        }
+
+        public void ProcessChunk(Chunk C)
+        {
+            int StartX = C.Rect.Left;
+            int EndX = C.Rect.Right;
+            int StartY = C.Rect.Bottom;
+            int EndY = C.Rect.Top;
+
+            for (int iY = StartY; iY != EndY; iY--)
+            {
+                if (ScanDirectionRight)
+                {
+                    for (int iX = StartX; iX != EndX; iX++)
+                    {
+                        ProcessPixel(iX, iY);
+                    }
+                } else
+                {
+                    for (int iX = EndX; iX != StartX; iX--)
+                    {
+                        ProcessPixel(iX, iY);
+                    }
+                }
+            }
+            ScanDirectionRight = !ScanDirectionRight;
+
+            C.RequiredUpdate = false;
         }
 
         public Color GetGroundColor()
@@ -686,6 +787,11 @@ namespace TerraQuake
                             Px.Color = GetStoneColor();
                             Px.Fallable = false;
                             Px.HasBackground = true;
+
+                            if(iY < 305)
+                            {
+                                Px.Fallable = true;
+                            }
                         } else
                         {
                             Px.Color = GetGroundColor();
@@ -746,6 +852,63 @@ namespace TerraQuake
                 AddPond(WorldGenRandom);
             }
         }
+
+        public void LocateChunks()
+        {
+            Color[] Colors = { Color.Red, Color.Green, Color.Yellow, Color.Blue, Color.Cyan, Color.Salmon };
+            int ColorIndex = 0;
+            Texture2D DebugTex = ContentManager.GetSprite("DebugWhite");
+            Chunks.Clear();
+            int ChunkW = 100;
+            int ChunkH = 100;
+            int X = 0;
+            int Y = 0;
+            while (true)
+            {
+                int W = ChunkW;
+                int H = ChunkH;
+                if(X+W >= TerrainW)
+                {
+                    W = TerrainW - X;
+                }
+                if (Y + H >= TerrainH)
+                {
+                    H = TerrainH - Y;
+                }
+
+                if(H <= 0)
+                {
+                    break;
+                }
+
+                if(W <= 0)
+                {
+                    Y += ChunkH;
+                    X = 0;
+                    continue;
+                }
+                Rectangle Rect = new Rectangle(X, Y, W, H);
+                Chunk C = new Chunk(Rect);
+
+                GameObject ChunkDebug = GameObjectManager.CreateObject();
+                Renderer Rend = new Renderer("Debug");
+                Rend.SetSprite(DebugTex, new Rectangle(0, 0, W, H));
+                Rend.Tint = Colors[ColorIndex];
+                ColorIndex++;
+                if (ColorIndex == Colors.Length)
+                {
+                    ColorIndex = 0;
+                }
+                ChunkDebug.AddComponent(Rend);
+                ChunkDebug.Position = new Vector2(Rect.X, Rect.Y);
+                C.DebugRenderer = Rend;
+                Chunks.Add(C);
+
+                X += W;
+            }
+        }
+
+
         public void CreateTerrain(int Seed = 0)
         {
             if (UpdateThreadsCreated)
@@ -769,6 +932,8 @@ namespace TerraQuake
             ShuffleRandom = new Random(Seed);
             WorldGenRandom = new Random(Seed);
             Pixels = new TerrainPixel[TerrainW * TerrainH];
+
+            LocateChunks();
 
             //SimpleGenerator();
             //AdvancedGenerator();
@@ -859,6 +1024,8 @@ namespace TerraQuake
                     }
                 }
             }
+            //AddProcessArea(new Rectangle(StartX, StartY, EndX- StartX, EndY-StartY));
+            AddHoleToHistory(X, Y, Radius);
         }
 
         public void MakeWater(int X, int Y)
@@ -871,6 +1038,7 @@ namespace TerraQuake
             Px.Fallable = true;
             Px.Water = true;
             Px.Color = GetWaterColor();
+            AddProcessPixel(X, Y);
         }
 
         public void MakeDirt(int X, int Y, int Radius)
@@ -923,6 +1091,7 @@ namespace TerraQuake
                         Px.Fallable = true;
                         Px.Color = Col;
                         AddChangedPixel(iX, iY, Col);
+                        AddProcessPixel(iX, iY);
                     }
                 }
             }
@@ -1145,16 +1314,48 @@ namespace TerraQuake
             return false;
         }
 
-        public static bool CanDoNext = false;
+        public void UpdateChunks()
+        {
+            while (!UpdateTreadInterrupt)
+            {
+                foreach (Chunk C in Chunks)
+                {
+                    C.RequiredUpdate = C.RequiredUpdateNextFrame;
+                    C.RequiredUpdateNextFrame = false;
+                    if (C.RequiredUpdate)
+                    {
+                        ProcessChunk(C);
+                    }
+                }
+            }
+        }
 
         public void Update()
         {
+            foreach (Chunk C in Chunks)
+            {
+                C.DebugRenderer.Visible = C.RequiredUpdate || C.RequiredUpdateNextFrame;
+            }
             if (!ManualUpdate && ReadyForRender)
             {
                 if (!UpdateThreadsCreated)
                 {
-                    UpdateTerrainThread = Task.Factory.StartNew(FallingPixels);
+                    UpdateTerrainThread = Task.Factory.StartNew(UpdateChunks);
                     UpdateThreadsCreated = true;
+                }
+            }
+
+            if (UseHistory)
+            {
+                foreach (TerrainHistoryEvent Event in TerrainHistory)
+                {
+                    if(Event.Age == CurrentAge)
+                    {
+                        if(Event.Event == HistoryEventType.Hole)
+                        {
+                            MakeHole(Event.Position.X, Event.Position.Y, Event.Radius);
+                        }
+                    }
                 }
             }
 

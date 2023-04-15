@@ -3,8 +3,10 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using Newtonsoft.Json;
 using TerraQuake;
 
 namespace TerraQuake
@@ -50,7 +52,7 @@ namespace TerraQuake
             LayersManager.AddLayer("Objects");
             LayersManager.AddLayer("Player");
 
-            bool Debug = false;
+            bool Debug = true;
 
             LayersManager.AddLayer("Debug").Visible = Debug;
 
@@ -186,7 +188,7 @@ namespace TerraQuake
                 DebugText.Font = ContentManager.GetSprite("DebugFont");
             }
             TerrainInstance = new Terrain();
-            TerrainInstance.CreateTerrain();
+            TerrainInstance.CreateTerrain(228);
 
             GameObject W = GameObjectManager.CreateObject();
             WeatherParticles WCom = new WeatherParticles();
@@ -293,6 +295,19 @@ namespace TerraQuake
             } else if (Key == Keys.K)
             {
                 MyGhost.Object.Position = GetPointer();
+            } else if (Key == Keys.F6)
+            {
+                //string SaveData = JsonSerializer.Serialize(TerrainInstance.TerrainHistory);
+                //if(!File.Exists("TerrainHistory"))
+                //{
+                //    File.Create("TerrainHistory");
+                //}
+                //File.WriteAllText("TerrainHistory", SaveData);
+            }else if(Key == Keys.F9)
+            {
+                //string SaveData = File.ReadAllText("TerrainHistory");
+                //TerrainInstance.TerrainHistory = JsonSerializer.Deserialize<List<Terrain.TerrainHistoryEvent>>(SaveData);
+                //TerrainInstance.ResumeHistory();
             }
         }
 
