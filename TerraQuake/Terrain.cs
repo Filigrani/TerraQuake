@@ -25,9 +25,8 @@ namespace TerraQuake
         public Renderer Renderer = null;
         public Renderer RendererBackground = null;
         public GameObject TerrainObject = null;
-        public bool NoRenderUpdate = false;
         public bool ReadyForRender = false;
-        public bool ManualUpdate = true;
+
         public bool UpdateTreadInterrupt = false;
         public bool UpdateThreadsCreated = false;
         public Task UpdateTerrainThread = null;
@@ -39,6 +38,23 @@ namespace TerraQuake
         public bool UseHistory = false;
         public List<Chunk> Chunks = new List<Chunk>();
         public ushort ChunksRow = 0;
+
+
+        //Debug Flags 
+        public ChunksDebug ChunksDebugMode = ChunksDebug.OneColorWhenUpdated;
+        public bool ManualUpdate = true;
+        public bool NoRenderUpdate = false;
+
+        public enum ChunksDebug
+        {
+            None = 0,
+            OneColorAlways = 1,
+            ManyColorsAlways = 2,
+            OneColorWhenUpdated = 3,
+            ManyColorsWhenUpdated = 4,
+        }
+
+
         public class Chunk
         {
             public bool RequiredUpdate = false;
@@ -297,7 +313,7 @@ namespace TerraQuake
                         AddChangedPixel(iX, iY + 1, PxBelow.Color);
                         AddProcessPixel(Px);
                         AddProcessPixel(PxBelow);
-                        return; // Can't rolling this frame if fall.
+                        //return; // Can't rolling this frame if fall.
                     }
                 }
 
@@ -322,13 +338,7 @@ namespace TerraQuake
 
                     if (CanRollLeft && CanRollRight)
                     {
-                        if (ScanRight)
-                        {
-                            Px.RollingDir = -1;
-                        } else
-                        {
-                            Px.RollingDir = 1;
-                        }
+                        Px.RollingDir = GetRandomDirection();
                     } else if (CanRollLeft)
                     {
                         Px.RollingDir = -1;
@@ -964,6 +974,8 @@ namespace TerraQuake
         public void LocateChunks()
         {
             Color[] Colors = { Color.Red, Color.Green, Color.Yellow, Color.Blue, Color.Cyan, Color.Salmon };
+            bool OneColor = ChunksDebugMode == ChunksDebug.OneColorAlways || ChunksDebugMode == ChunksDebug.OneColorWhenUpdated;
+            bool DebugColors = ChunksDebugMode != ChunksDebug.None;
             int ColorIndex = 0;
             Texture2D DebugTex = ContentManager.GetSprite("DebugWhite");
             Chunks.Clear();
@@ -999,19 +1011,27 @@ namespace TerraQuake
                 }
                 Chunk C = new Chunk(X, Y, EndX, EndY);
 
-                GameObject ChunkDebug = GameObjectManager.CreateObject();
-                Renderer Rend = new Renderer("Debug");
-                Rend.SetSprite(DebugTex, new Rectangle(0, 0, EndX-X+1, EndY-Y + 1));
-                ColorIndex++;
-                if (ColorIndex == Colors.Length)
+                if (DebugColors)
                 {
-                    ColorIndex = 0;
+                    GameObject ChunkDebug = GameObjectManager.CreateObject();
+                    Renderer Rend = new Renderer("Debug");
+                    Rend.SetSprite(DebugTex, new Rectangle(0, 0, EndX - X + 1, EndY - Y + 1));
+                    if (OneColor)
+                    {
+                        Rend.Tint = Color.Aqua;
+                    } else
+                    {
+                        ColorIndex++;
+                        if (ColorIndex == Colors.Length)
+                        {
+                            ColorIndex = 0;
+                        }
+                        Rend.Tint = Colors[ColorIndex];
+                    }
+                    ChunkDebug.AddComponent(Rend);
+                    ChunkDebug.Position = new Vector2(X, Y);
+                    C.DebugRenderer = Rend;
                 }
-                //Rend.Tint = Color.Aqua;
-                Rend.Tint = Colors[ColorIndex];
-                ChunkDebug.AddComponent(Rend);
-                ChunkDebug.Position = new Vector2(X, Y);
-                C.DebugRenderer = Rend;
                 Chunks.Add(C);
                 int ChunkID = Chunks.Count - 1;
                 for (int iY = Y; iY <= EndY; iY++)
@@ -1560,14 +1580,25 @@ namespace TerraQuake
             }
         }
 
-
-
         public void Update()
         {
-            foreach (Chunk C in Chunks)
+            bool Always = ChunksDebugMode == ChunksDebug.OneColorAlways || ChunksDebugMode == ChunksDebug.ManyColorsAlways;
+            bool DebugColors = ChunksDebugMode != ChunksDebug.None;
+
+            if (DebugColors)
             {
-                C.DebugRenderer.Visible = C.RequiredUpdate || C.RequiredUpdateNextFrame;
+                foreach (Chunk C in Chunks)
+                {
+                    if (Always)
+                    {
+                        C.DebugRenderer.Visible = true;
+                    } else
+                    {
+                        C.DebugRenderer.Visible = C.RequiredUpdate || C.RequiredUpdateNextFrame;
+                    }
+                }
             }
+
             if (!ManualUpdate && ReadyForRender)
             {
                 if (!UpdateThreadsCreated)
