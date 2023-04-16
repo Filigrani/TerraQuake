@@ -11,7 +11,6 @@ using Microsoft.Xna.Framework.Input;
 using System.Diagnostics;
 using System.Net.Cache;
 using Newtonsoft.Json.Linq;
-using static TerraQuake.Terrain;
 
 namespace TerraQuake
 {
@@ -38,11 +37,12 @@ namespace TerraQuake
         public bool UseHistory = false;
         public List<Chunk> Chunks = new List<Chunk>();
         public ushort ChunksRow = 0;
+        public bool ConstantUpdateThread = false;
 
 
         //Debug Flags 
         public ChunksDebug ChunksDebugMode = ChunksDebug.OneColorWhenUpdated;
-        public bool ManualUpdate = true;
+        public bool ManualUpdate = false;
         public bool NoRenderUpdate = false;
 
         public enum ChunksDebug
@@ -1032,7 +1032,9 @@ namespace TerraQuake
                     ChunkDebug.Position = new Vector2(X, Y);
                     C.DebugRenderer = Rend;
                 }
+
                 Chunks.Add(C);
+
                 int ChunkID = Chunks.Count - 1;
                 for (int iY = Y; iY <= EndY; iY++)
                 {
@@ -1601,10 +1603,25 @@ namespace TerraQuake
 
             if (!ManualUpdate && ReadyForRender)
             {
-                if (!UpdateThreadsCreated)
+                if (ConstantUpdateThread)
                 {
-                    UpdateTerrainThread = Task.Factory.StartNew(UpdateChunks);
-                    UpdateThreadsCreated = true;
+                    if (!UpdateThreadsCreated)
+                    {
+                        UpdateTerrainThread = Task.Factory.StartNew(UpdateChunks);
+                        UpdateThreadsCreated = true;
+                    }
+                } else
+                {
+                    if (!UpdateThreadsCreated || (UpdateThreadsCreated && (UpdateTerrainThread == null || UpdateTerrainThread.IsCompleted)))
+                    {
+                        if (UpdateTerrainThread != null)
+                        {
+                            UpdateTerrainThread.Dispose();
+                            UpdateTerrainThread = null;
+                        }
+                        UpdateThreadsCreated = true;
+                        UpdateTerrainThread = Task.Factory.StartNew(ProcessAllChunks);
+                    }
                 }
             }
 
