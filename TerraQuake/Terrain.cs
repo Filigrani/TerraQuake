@@ -11,6 +11,7 @@ using Microsoft.Xna.Framework.Input;
 using System.Diagnostics;
 using System.Net.Cache;
 using Newtonsoft.Json.Linq;
+using static TerraQuake.Terrain;
 
 namespace TerraQuake
 {
@@ -168,22 +169,27 @@ namespace TerraQuake
             if (ID != -1)
             {
                 Chunks[ID].RequiredUpdateNextFrame = true;
+                //Chunks[ID].RequiredUpdate = true;
             }
             if(LID != -1)
             {
                 Chunks[LID].RequiredUpdateNextFrame = true;
+                //Chunks[LID].RequiredUpdate = true;
             }
             if (RID != -1)
             {
                 Chunks[RID].RequiredUpdateNextFrame = true;
+                //Chunks[RID].RequiredUpdate = true;
             }
             if (TID != -1)
             {
                 Chunks[TID].RequiredUpdateNextFrame = true;
+                Chunks[TID].RequiredUpdate = true;
             }
             if (BID != -1)
             {
                 Chunks[BID].RequiredUpdateNextFrame = true;
+                //Chunks[BID].RequiredUpdate = true;
             }
         }
         public void AddProcessPixel(int iX, int iY)
@@ -258,7 +264,7 @@ namespace TerraQuake
         }
 
         public const int PixelMoveSpeed = 1;
-        public void ProcessPixel(int iX, int iY)
+        public void ProcessPixel(int iX, int iY, bool ScanRight = false)
         {
             TerrainPixel Px = GetPixel(iX, iY);
             if (Px.IsFallable()) // Pixel is dynamic.
@@ -311,7 +317,7 @@ namespace TerraQuake
                     int Roll = 0;
                     while(Roll != PixelMoveSpeed)
                     {
-                        if ((Px.Water && Px.Rolling > -100) || Px.Rolling > 0) // Ability to roll left and right.
+                        if ((Px.Water && Px.Rolling > -1000) || Px.Rolling > 0) // Ability to roll left and right.
                         {
                             Px.Rolling--; // Remove 1 from rolling counts.
 
@@ -332,7 +338,13 @@ namespace TerraQuake
 
                             if (CanRollLeft && CanRollRight)
                             {
-                                Px.RollingDir = GetRandomDirection();
+                                if (ScanRight)
+                                {
+                                    Px.RollingDir = -1;
+                                } else
+                                {
+                                    Px.RollingDir = 1;
+                                }
                             } else if (CanRollLeft)
                             {
                                 Px.RollingDir = -1;
@@ -435,19 +447,17 @@ namespace TerraQuake
                 {
                     for (int iX = StartX; iX != EndX; iX++)
                     {
-                        ProcessPixel(iX, iY);
+                        ProcessPixel(iX, iY, ScanDirectionRight);
                     }
                 } else
                 {
                     for (int iX = EndX-1; iX != StartX; iX--)
                     {
-                        ProcessPixel(iX, iY);
+                        ProcessPixel(iX, iY, ScanDirectionRight);
                     }
                 }
             }
             ScanDirectionRight = !ScanDirectionRight;
-
-            C.RequiredUpdate = false;
         }
 
         public Color GetGroundColor()
@@ -912,7 +922,7 @@ namespace TerraQuake
                 Chunks.Add(C);
 
                 int StartX = C.Rect.Left;
-                int EndX = C.Rect.Right - 1;
+                int EndX = C.Rect.Right;
                 int StartY = C.Rect.Bottom-1;
                 int EndY = C.Rect.Top;
                 int ChunkID = Chunks.Count - 1;
@@ -941,6 +951,18 @@ namespace TerraQuake
                     }
                 }
                 X += W;
+            }
+
+            for (int iY = TerrainH-1; iY != -1; iY--)
+            {
+                for (int iX = 0; iX != TerrainH-1; iX++)
+                {
+                    TerrainPixel Px = GetPixel(iX, iY);
+                    if(Px.ChunkID == -1)
+                    {
+                        int WhatTheHeck = 0;
+                    }
+                }
             }
         }
 
@@ -1405,22 +1427,45 @@ namespace TerraQuake
             }
             return false;
         }
-
+        public bool ChunksScanDirectionRight = false;
         public void UpdateChunks()
         {
             while (!UpdateTreadInterrupt)
             {
-                foreach (Chunk C in Chunks)
+                for (int i = 0; i != Chunks.Count; i++)
                 {
+                    Chunk C = Chunks[i];
                     C.RequiredUpdate = C.RequiredUpdateNextFrame;
                     C.RequiredUpdateNextFrame = false;
-                    if (C.RequiredUpdate)
+                }
+
+                if (ChunksScanDirectionRight)
+                {
+                    for (int i = 0; i != Chunks.Count; i++)
                     {
-                        ProcessChunk(C);
+                        Chunk C = Chunks[i];
+                        if (C.RequiredUpdate)
+                        {
+                            ProcessChunk(C);
+                        }
+                    }
+                } else
+                {
+                    for (int i = Chunks.Count-1; i != -1; i--)
+                    {
+                        Chunk C = Chunks[i];
+                        if (C.RequiredUpdate)
+                        {
+                            ProcessChunk(C);
+                        }
                     }
                 }
+
+                //ChunksScanDirectionRight = !ChunksScanDirectionRight;
             }
         }
+
+
 
         public void Update()
         {
