@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using Newtonsoft.Json;
 using TerraQuake;
+using System.Threading.Tasks;
 
 namespace TerraQuake
 {
@@ -290,7 +291,16 @@ namespace TerraQuake
             {
                 if (TerrainInstance != null && TerrainInstance.ManualUpdate)
                 {
-                    TerrainInstance.FallingPixels();
+                    if (!TerrainInstance.UpdateThreadsCreated || (TerrainInstance.UpdateThreadsCreated && (TerrainInstance.UpdateTerrainThread == null || TerrainInstance.UpdateTerrainThread.IsCompleted)))
+                    {
+                        if(TerrainInstance.UpdateTerrainThread != null)
+                        {
+                            TerrainInstance.UpdateTerrainThread.Dispose();
+                            TerrainInstance.UpdateTerrainThread = null;
+                        }
+                        TerrainInstance.UpdateThreadsCreated = true;
+                        TerrainInstance.UpdateTerrainThread = Task.Factory.StartNew(TerrainInstance.ProcessAllChunks);
+                    }
                 }
             } else if (Key == Keys.K)
             {
@@ -350,10 +360,19 @@ namespace TerraQuake
                 }
                 if (Keyboard.GetState().IsKeyDown(Keys.LeftControl))
                 {
-                    //if (TerrainInstance != null && TerrainInstance.ManualUpdate)
-                    //{
-                    //    TerrainInstance.FallingPixels();
-                    //}
+                    if (TerrainInstance != null && TerrainInstance.ManualUpdate)
+                    {
+                        if (!TerrainInstance.UpdateThreadsCreated || (TerrainInstance.UpdateThreadsCreated && (TerrainInstance.UpdateTerrainThread == null || TerrainInstance.UpdateTerrainThread.IsCompleted)))
+                        {
+                            if (TerrainInstance.UpdateTerrainThread != null)
+                            {
+                                TerrainInstance.UpdateTerrainThread.Dispose();
+                                TerrainInstance.UpdateTerrainThread = null;
+                            }
+                            TerrainInstance.UpdateThreadsCreated = true;
+                            TerrainInstance.UpdateTerrainThread = Task.Factory.StartNew(TerrainInstance.ProcessAllChunks);
+                        }
+                    }
                 }
                 if (Keyboard.GetState().IsKeyDown(Keys.Space))
                 {
