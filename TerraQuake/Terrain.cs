@@ -44,6 +44,7 @@ namespace TerraQuake
         public ChunksDebug ChunksDebugMode = ChunksDebug.OneColorWhenUpdated;
         public bool ManualUpdate = false;
         public bool NoRenderUpdate = false;
+        public bool AlertNearChunksAnyWay = false;
 
         public enum ChunksDebug
         {
@@ -180,43 +181,59 @@ namespace TerraQuake
             }
         }
 
-        public void AddProcessPixel(TerrainPixel Px)
+        public void AlertChunks(TerrainPixel Px, int iX, int iY)
         {
             int ID = Px.ChunkID;
             int LID = Px.ChunkLeftID;
             int RID = Px.ChunkRightID;
             int TID = Px.ChunkTopID;
             int BID = Px.ChunkBottomID;
-
+            Chunk HomeChunk;
             if (ID != -1)
             {
-                Chunks[ID].RequiredUpdateNextFrame = true;
-                //Chunks[ID].RequiredUpdate = true;
+                HomeChunk = Chunks[ID];
+                HomeChunk.RequiredUpdateNextFrame = true;
+            } else
+            {
+                return;
             }
             if(LID != -1)
             {
-                Chunks[LID].RequiredUpdateNextFrame = true;
-                //Chunks[LID].RequiredUpdate = true;
+                if(AlertNearChunksAnyWay || iX == HomeChunk.StartX)
+                {
+                    Chunks[LID].RequiredUpdateNextFrame = true;
+                }
             }
             if (RID != -1)
             {
-                Chunks[RID].RequiredUpdateNextFrame = true;
-                //Chunks[RID].RequiredUpdate = true;
+                if(AlertNearChunksAnyWay || iX == HomeChunk.EndX)
+                {
+                    Chunks[RID].RequiredUpdateNextFrame = true;
+                }
             }
             if (TID != -1)
             {
-                Chunks[TID].RequiredUpdateNextFrame = true;
-                //Chunks[TID].RequiredUpdate = true;
+                if(AlertNearChunksAnyWay || iY == HomeChunk.StartY)
+                {
+                    Chunks[TID].RequiredUpdateNextFrame = true;
+                }
             }
             if (BID != -1)
             {
-                Chunks[BID].RequiredUpdateNextFrame = true;
-                //Chunks[BID].RequiredUpdate = true;
+                if(AlertNearChunksAnyWay || iY == HomeChunk.EndY)
+                {
+                    Chunks[BID].RequiredUpdateNextFrame = true;
+                }
             }
         }
-        public void AddProcessPixel(int iX, int iY)
+        public void AlertChunks(int iX, int iY)
         {
-            AddProcessPixel(GetPixel(iX, iY));
+            AlertChunks(GetPixel(iX, iY), iX, iY);
+        }
+
+        public Chunk GetChunk(int iX, int iY)
+        {
+            return Chunks[GetPixel(iX, iY).ChunkID];
         }
 
         public void AddChangedPixel(int X, int Y, Color Col)
@@ -311,8 +328,8 @@ namespace TerraQuake
                         // Re-render this pixels
                         AddChangedPixel(iX, iY, Color.Transparent);
                         AddChangedPixel(iX, iY + 1, PxBelow.Color);
-                        AddProcessPixel(Px);
-                        AddProcessPixel(PxBelow);
+                        AlertChunks(Px, iX, iY);
+                        AlertChunks(PxBelow, iX, iY + 1);
                         //return; // Can't rolling this frame if fall.
                     }
                 }
@@ -360,16 +377,16 @@ namespace TerraQuake
                             Px.Delete();
                             AddChangedPixel(iX + Dir, iY, PxRight.Color);
                             AddChangedPixel(iX, iY, Color.Transparent);
-                            AddProcessPixel(Px);
-                            AddProcessPixel(PxRight);
+                            AlertChunks(Px, iX, iY);
+                            AlertChunks(PxRight, iX + Dir, iY);
                         } else
                         {
                             Px.MoveTo(PxLeft);
                             Px.Delete();
                             AddChangedPixel(iX + Dir, iY, PxLeft.Color);
                             AddChangedPixel(iX, iY, Color.Transparent);
-                            AddProcessPixel(Px);
-                            AddProcessPixel(PxLeft);
+                            AlertChunks(Px, iX, iY);
+                            AlertChunks(PxLeft, iX + Dir, iY);
                         }
                     }
                 }
@@ -541,27 +558,6 @@ namespace TerraQuake
                 }
                 sp.Stop();
             }
-        }
-
-        public void ProcessChunk(Chunk C)
-        {
-            for (int iY = C.EndY; iY >= C.StartY; iY--)
-            {
-                if (ScanDirectionRight)
-                {
-                    for (int iX = C.StartX; iX <= C.EndX; iX++)
-                    {
-                        ProcessPixel(iX, iY, ScanDirectionRight);
-                    }
-                } else
-                {
-                    for (int iX = C.EndX; iX >= C.StartX; iX--)
-                    {
-                        ProcessPixel(iX, iY, ScanDirectionRight);
-                    }
-                }
-            }
-            ScanDirectionRight = !ScanDirectionRight;
         }
 
         public Color GetGroundColor()
@@ -1184,7 +1180,7 @@ namespace TerraQuake
                             {
                                 if(GetPixel(iX, iY - 1).IsFallable())
                                 {
-                                    AddProcessPixel(Px);
+                                    AlertChunks(Px, iX, iY);
                                 }
                             }
                         }
@@ -1205,7 +1201,7 @@ namespace TerraQuake
             Px.Fallable = true;
             Px.Water = true;
             Px.Color = GetWaterColor();
-            AddProcessPixel(Px);
+            AlertChunks(Px, X, Y);
         }
 
         public void MakeSnow(int X, int Y, int Radius)
@@ -1258,7 +1254,7 @@ namespace TerraQuake
                         Px.Fallable = true;
                         Px.Color = Col;
                         AddChangedPixel(iX, iY, Col);
-                        AddProcessPixel(Px);
+                        AlertChunks(Px, iX, iY);
                     }
                 }
             }
@@ -1315,7 +1311,7 @@ namespace TerraQuake
                         Px.Water = true;
                         Px.Color = Col;
                         AddChangedPixel(iX, iY, Col);
-                        AddProcessPixel(Px);
+                        AlertChunks(Px, iX, iY);
                     }
                 }
             }
@@ -1458,7 +1454,7 @@ namespace TerraQuake
 
         public int LastScanY = 0;
         public int LastScanYEnd = 0;
-        public bool CheckCollision(Rectangle Rect)
+        public bool CheckCollision(Rectangle Rect, bool IgnoreWater = true)
         {
             bool OutOfTerrain = false;
             if(Rect.Bottom < 0)
@@ -1524,7 +1520,7 @@ namespace TerraQuake
                 for (int y = StartY; y < EndY; y++)
                 {
                     TerrainPixel Px = GetPixel(x, y);
-                    if (!Px.IsAir() && !Px.IsWater())
+                    if (!Px.IsAir() && (!IgnoreWater || !Px.IsWater()))
                     {
                         Rectangle PixelBounds = new Rectangle(x, y, 1, 1);
 
@@ -1537,41 +1533,104 @@ namespace TerraQuake
             }
             return false;
         }
-        public bool ChunksScanDirectionRight = false;
 
         public void ProcessAllChunks()
         {
+            Chunk C = null;
             for (int i = 0; i != Chunks.Count; i++)
             {
-                Chunk C = Chunks[i];
+                C = Chunks[i];
                 C.RequiredUpdate = C.RequiredUpdateNextFrame;
                 C.RequiredUpdateNextFrame = false;
             }
+            TerrainPixel Px;
+            for (int iY = TerrainH - 1; iY != -1; iY--)
+            {
+                if (ScanDirectionRight)
+                {
+                    for (int iX = 0; iX != TerrainW; iX++)
+                    {
+                        Px = GetPixel(iX, iY);
+                        C = Chunks[Px.ChunkID];
 
-            if (ChunksScanDirectionRight)
-            {
-                for (int i = 0; i != Chunks.Count; i++)
-                {
-                    Chunk C = Chunks[i];
-                    if (C.RequiredUpdate)
-                    {
-                        ProcessChunk(C);
+                        if(C.RequiredUpdate)
+                        {
+                            ProcessPixel(iX, iY);
+                        } else
+                        {
+                            if (C.EndX != TerrainW - 1)
+                            {
+                                iX = C.EndX + 1;
+                            } else
+                            {
+                                break;
+                            }
+                        }
                     }
-                }
-            } else
-            {
-                for (int i = Chunks.Count - 1; i != -1; i--)
+                } else
                 {
-                    Chunk C = Chunks[i];
-                    if (C.RequiredUpdate)
+                    for (int iX = TerrainW - 1; iX != 1; iX--)
                     {
-                        ProcessChunk(C);
+                        Px = GetPixel(iX, iY);
+                        C = Chunks[Px.ChunkID];
+
+                        if (C.RequiredUpdate)
+                        {
+                            ProcessPixel(iX, iY);
+                        } else
+                        {
+                            if (C.StartX != 0)
+                            {
+                                iX = C.StartX - 1;
+                            } else
+                            {
+                                break;
+                            }
+                        }
                     }
                 }
             }
-
-            //ChunksScanDirectionRight = !ChunksScanDirectionRight;
+            ScanDirectionRight = !ScanDirectionRight;
         }
+
+        //public void ProcessChunk(Chunk C)
+        //{
+        //    for (int iY = C.EndY; iY >= C.StartY; iY--)
+        //    {
+        //        if (ScanDirectionRight)
+        //        {
+        //            for (int iX = C.StartX; iX <= C.EndX; iX++)
+        //            {
+        //                ProcessPixel(iX, iY, ScanDirectionRight);
+        //            }
+        //        } else
+        //        {
+        //            for (int iX = C.EndX; iX >= C.StartX; iX--)
+        //            {
+        //                ProcessPixel(iX, iY, ScanDirectionRight);
+        //            }
+        //        }
+        //    }
+        //    ScanDirectionRight = !ScanDirectionRight;
+        //}
+
+        //public void ProcessAllChunksOld()
+        //{
+        //    for (int i = 0; i != Chunks.Count; i++)
+        //    {
+        //        Chunk C = Chunks[i];
+        //        C.RequiredUpdate = C.RequiredUpdateNextFrame;
+        //        C.RequiredUpdateNextFrame = false;
+        //    }
+        //    for (int i = Chunks.Count - 1; i != -1; i--)
+        //    {
+        //        Chunk C = Chunks[i];
+        //        if (C.RequiredUpdate)
+        //        {
+        //            ProcessChunk(C);
+        //        }
+        //    }
+        //}
 
 
         public void UpdateChunks()

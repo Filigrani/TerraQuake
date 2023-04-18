@@ -52,7 +52,7 @@ namespace TerraQuake
                 {
                     if (Terra != null)
                     {
-                        if (Terra.CheckCollision(new Rectangle((int)Particle.RenderOffset.X, (int)(Particle.RenderOffset.Y+Gravity), 4, 4)))
+                        if (Terra.CheckCollision(new Rectangle((int)Particle.RenderOffset.X, (int)(Particle.RenderOffset.Y+Gravity), 4, 4), false))
                         {
                             Terra.MakeSnow((int)Particle.RenderOffset.X, (int)Particle.RenderOffset.Y, 2);
                             Object.RemoveComponent(typeof(Renderer), Particle.name);
