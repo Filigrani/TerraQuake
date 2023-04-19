@@ -17,6 +17,28 @@ namespace TerraQuake
         public static float SmoothnessAmout = 8;
         public static int Scaler = 1;
 
+        public static void Wipe(bool DeleteLayers = false)
+        {
+            foreach (Layer L in Layers)
+            {
+                L.DebugRenderers.Clear();
+                L.Renderers.Clear();
+            }
+
+            if (DeleteLayers)
+            {
+                Layers.Clear();
+                LayersIndexes.Clear();
+            }
+        }
+
+        public static void Reset()
+        {
+            DesiredScrolling = new Vector2(0, 0);
+            Scrolling = new Vector2(0, 0);
+        }
+
+
         public static Layer AddLayer(string Name)
         {
             Layer NewLayer = new Layer(Name);

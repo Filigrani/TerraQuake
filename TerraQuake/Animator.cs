@@ -1,5 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -226,6 +227,23 @@ namespace TerraQuake
         public override void Update(GameTime gameTime)
         {
             LastUpdate = gameTime.TotalGameTime;
+
+
+            if (ByFrameDebug && CurrentAnimation != null)
+            {
+                if (Input.KeyPressed(Keys.Down))
+                {
+                    CurrentAnimation.DoPreviousFrame(gameTime);
+                }
+                if (Input.KeyPressed(Keys.Up))
+                {
+                    CurrentAnimation.DoNextFrame(gameTime);
+                }
+            }
+
+
+
+
             if (Object != null && CurrentAnimation != null && MyRenderer != null)
             {
                 CurrentAnimation.Update(gameTime);

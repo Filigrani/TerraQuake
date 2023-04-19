@@ -41,7 +41,7 @@ namespace TerraQuake
 
 
         //Debug Flags 
-        public ChunksDebug ChunksDebugMode = ChunksDebug.OneColorWhenUpdated;
+        public ChunksDebug ChunksDebugMode = ChunksDebug.None;
         public bool ManualUpdate = false;
         public bool NoRenderUpdate = false;
         public bool AlertNearChunksAnyWay = false;
@@ -1119,6 +1119,45 @@ namespace TerraQuake
         }
 
         public Point LastHole = new Point(0,0);
+
+        public void ApplyExplosionEffect(int X, int Y, int Radius)
+        {
+            int StartX = X - Radius;
+            int EndX = X + Radius;
+            int StartY = Y - Radius;
+            int EndY = Y + Radius;
+
+            if (StartX < 0)
+            {
+                StartX = 0;
+            } else if (StartX > TerrainW)
+            {
+                StartX = TerrainW;
+            }
+            if (EndX < 0)
+            {
+                EndX = 0;
+            } else if (EndX > TerrainW)
+            {
+                EndX = TerrainW;
+            }
+            if (StartY < 0)
+            {
+                StartY = 0;
+            } else if (StartY > TerrainH)
+            {
+                StartY = TerrainH;
+            }
+            if (EndY < 0)
+            {
+                EndY = 0;
+            } else if (EndY > TerrainH)
+            {
+                EndY = TerrainH;
+            }
+        }
+
+
         public void MakeHole(int X, int Y, int Radius)
         {
             LastHole.X = X;
@@ -1536,7 +1575,7 @@ namespace TerraQuake
 
         public void ProcessAllChunks()
         {
-            Chunk C = null;
+            Chunk C;
             for (int i = 0; i != Chunks.Count; i++)
             {
                 C = Chunks[i];
@@ -1592,46 +1631,6 @@ namespace TerraQuake
             }
             ScanDirectionRight = !ScanDirectionRight;
         }
-
-        //public void ProcessChunk(Chunk C)
-        //{
-        //    for (int iY = C.EndY; iY >= C.StartY; iY--)
-        //    {
-        //        if (ScanDirectionRight)
-        //        {
-        //            for (int iX = C.StartX; iX <= C.EndX; iX++)
-        //            {
-        //                ProcessPixel(iX, iY, ScanDirectionRight);
-        //            }
-        //        } else
-        //        {
-        //            for (int iX = C.EndX; iX >= C.StartX; iX--)
-        //            {
-        //                ProcessPixel(iX, iY, ScanDirectionRight);
-        //            }
-        //        }
-        //    }
-        //    ScanDirectionRight = !ScanDirectionRight;
-        //}
-
-        //public void ProcessAllChunksOld()
-        //{
-        //    for (int i = 0; i != Chunks.Count; i++)
-        //    {
-        //        Chunk C = Chunks[i];
-        //        C.RequiredUpdate = C.RequiredUpdateNextFrame;
-        //        C.RequiredUpdateNextFrame = false;
-        //    }
-        //    for (int i = Chunks.Count - 1; i != -1; i--)
-        //    {
-        //        Chunk C = Chunks[i];
-        //        if (C.RequiredUpdate)
-        //        {
-        //            ProcessChunk(C);
-        //        }
-        //    }
-        //}
-
 
         public void UpdateChunks()
         {
@@ -1698,13 +1697,54 @@ namespace TerraQuake
                 }
             }
 
-            if (Keyboard.GetState().IsKeyDown(Keys.U))
+            if (Input.KeyDown(Keys.U))
             {
                 Vector2 P = ContentManager.Game.GetPointer();
                 
                 int X = (int)P.X;
                 int Y = (int)P.Y;
                 MakeWater(X, Y, 3);
+            }
+            if (Input.KeyPressed(Keys.T))
+            {
+                Vector2 P = ContentManager.Game.GetPointer();
+                int X = (int)P.X;
+                int Y = (int)P.Y;
+
+                MakeHole(X, Y, 40);
+            }
+            if (Input.KeyPressed(Keys.B))
+            {
+                LongetsUpdateMs = 0;
+                BenchHoles();
+            }
+            if (Input.KeyPressed(Keys.R))
+            {
+                CreateTerrain();
+            }
+            if (Input.KeyPressed(Keys.Y))
+            {
+                Vector2 P = ContentManager.Game.GetPointer();
+                int X = (int)P.X;
+                int Y = (int)P.Y;
+
+                MakeSnow(X, Y, 10);
+            }
+            if (Input.KeyPressed(Keys.LeftShift))
+            {
+                if (ManualUpdate)
+                {
+                    if (!UpdateThreadsCreated || (UpdateThreadsCreated && (UpdateTerrainThread == null || UpdateTerrainThread.IsCompleted)))
+                    {
+                        if (UpdateTerrainThread != null)
+                        {
+                            UpdateTerrainThread.Dispose();
+                            UpdateTerrainThread = null;
+                        }
+                        UpdateThreadsCreated = true;
+                        UpdateTerrainThread = Task.Factory.StartNew(ProcessAllChunks);
+                    }
+                }
             }
         }
 

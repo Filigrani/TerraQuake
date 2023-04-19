@@ -131,6 +131,12 @@ namespace TerraQuake
             {
                 Velocity.X = 0;
             }
+
+            if (Input.KeyPressed(Keys.Y))
+            {
+                Vector2 P = ContentManager.Game.GetPointer();
+                Object.Position = P;
+            }
         }
 
         public void Jump()

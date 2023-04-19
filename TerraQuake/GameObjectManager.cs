@@ -13,6 +13,16 @@ namespace TerraQuake
         public static Dictionary<string, GameObject> Objects = new Dictionary<string, GameObject>();
         public static Vector2 PerspectivePosition = new Vector2(0, 0);
         public static float UpdateDistance = 700;
+
+        public static void Wipe()
+        {
+            List<KeyValuePair<string, GameObject>> Li = Objects.ToList();
+            for (int i = Li.Count-1; i != -1; i--)
+            {
+                Li[i].Value.Destroy();
+            }
+        }
+
         public static GameObject CreateObject()
         {
             return CreateObject(new Vector2(0,0), "");
