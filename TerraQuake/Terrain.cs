@@ -11,6 +11,7 @@ using Microsoft.Xna.Framework.Input;
 using System.Diagnostics;
 using System.Net.Cache;
 using Newtonsoft.Json.Linq;
+using static TerraQuake.Terrain;
 
 namespace TerraQuake
 {
@@ -1914,6 +1915,10 @@ namespace TerraQuake
                     }
                 }
             }
+            if (Input.KeyPressed(Keys.L))
+            {
+                PixelsBlocksLight = !PixelsBlocksLight;
+            }
         }
 
         public static List<T> CloneList<T>(List<T> original)
@@ -1933,6 +1938,7 @@ namespace TerraQuake
 
         public void MakeLight(int X, int Y, int Radius)
         {
+            
             int StartX = X - Radius;
             int EndX = X + Radius;
             int StartY = Y - Radius;
@@ -1966,7 +1972,6 @@ namespace TerraQuake
             {
                 EndY = TerrainH-1;
             }
-
             // Bottom edge
             for (int iX = StartX; iX <= EndX; iX++)
             {
@@ -2034,46 +2039,47 @@ namespace TerraQuake
             }
         }
 
-        public void SetLight(Point pos1, Point pos2, int Radius)
+        public float ProcentFromDistance(float Distance, float MaxDistance)
+        {
+            return  ((100f * Distance) / MaxDistance);
+        }
+
+        public bool PixelsBlocksLight = true;
+        public bool UseCloseLight = false;
+
+        public bool SetLight(Point pos1, Point pos2, int Radius)
         {
             int num = pos2.X - pos1.X;
             int num2 = pos2.Y - pos1.Y;
-
-            int FullLightRadius = 0;
-            int ActualRadius = Radius;
-
             float Dis = MathF.Sqrt(num * num + num2 * num2);
-            if(Dis <= ActualRadius)
+            if (Dis <= Radius)
             {
                 int Index = GetIndex(pos2.X, pos2.Y);
                 TerrainPixel Px = Pixels[Index];
 
-                if(Dis <= FullLightRadius)
+                bool AirOrWater = Px.IsAir() || Px.IsWater();
+                float Top = Radius;
+                float Alpha = 0.1f + ProcentFromDistance(Dis, Top) / 100;
+                Color c = new Color(0, 0, 0, Alpha);
+                LightColorData[Index] = c;
+                if (!AirOrWater)
                 {
-                    LightColorData[Index] = Color.Transparent;
-                } else if(Dis <= ActualRadius)
-                {
-                    if (Px.IsAir())
-                    {
-                        LightColorData[Index] = Color.Transparent;
-                    } else
-                    {
-                        float Alpha = 0 + Dis/100;
-                        Color c = new Color(0, 0, 0, Alpha);
-                        LightColorData[Index] = c;
-                    }
+                    return false;
                 }
             }
+            return true;
         }
-
 
         //  Method by DavidMcLaughlin. Ported from Java to C# by Me.
         // https://gist.github.com/DavidMcLaughlin208/60e69e698e3858617c322d80a8f174e2
-        public bool TwoPoints(Point pos1, Point pos2, int Radius)
+        public void TwoPoints(Point pos1, Point pos2, int Radius)
         {
             if (pos1.Equals(pos2))
             {
-                SetLight(pos1, pos1, Radius);
+                if(!SetLight(pos2, pos2, Radius))
+                {
+                    return;
+                }
             }
 
             int matrixX1 = (int)pos1.X;
@@ -2091,8 +2097,11 @@ namespace TerraQuake
             int longerSideLength = Math.Max(Math.Abs(xDiff), Math.Abs(yDiff));
             int shorterSideLength = Math.Min(Math.Abs(xDiff), Math.Abs(yDiff));
             float slope = (shorterSideLength == 0 || longerSideLength == 0) ? 0 : ((float)(shorterSideLength) / (longerSideLength));
-
             int shorterSideIncrease;
+            Point ObstaclePosition = Point.Zero;
+            bool FoundObstacle = false;
+            float MaxDistanceBehindObstacle = 10;
+
             for (int i = 1; i <= longerSideLength; i++)
             {
                 shorterSideIncrease = (int) Math.Round((double)i * slope);
@@ -2110,10 +2119,34 @@ namespace TerraQuake
                 int currentX = matrixX1 + (xIncrease * xModifier);
                 if (IsInsideTerrain(currentX, currentY))
                 {
-                    SetLight(pos1, new Point(currentX, currentY), Radius);
+                    Point pos3 = new Point(currentX, currentY);
+
+                    if (FoundObstacle)
+                    {
+                        int num = pos3.X - ObstaclePosition.X;
+                        int num2 = pos3.Y - ObstaclePosition.Y;
+                        float Dis = MathF.Sqrt(num * num + num2 * num2);
+                        int num3 = pos1.X - ObstaclePosition.X;
+                        int num4 = pos1.Y - ObstaclePosition.Y;
+                        float Dis2 = MathF.Sqrt(num3 * num3 + num4 * num4);
+                        if (Dis <= MaxDistanceBehindObstacle - Dis2/100)
+                        {
+                            SetLight(pos1, pos3, Radius);
+                        }
+                    } else
+                    {
+                        if (!SetLight(pos1, pos3, Radius))
+                        {
+                            if (!FoundObstacle)
+                            {
+                                FoundObstacle = true;
+                                ObstaclePosition = pos3;
+                            }
+                        }
+                    }
                 }
             }
-            return false;
+            return;
         }
 
 

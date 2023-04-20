@@ -31,6 +31,7 @@ namespace TerraQuake
         public bool RightBlocked = false;
         public bool LeftBlocked = false;
         public int ClimbHeigh = 8;
+        public int LightRadius = 120;
 
         public int CanClimb(Microsoft.Xna.Framework.Rectangle Colision, int Side, int X)
         {
@@ -69,7 +70,7 @@ namespace TerraQuake
                 int X = (int)P.X;
                 int Y = (int)P.Y;
 
-                Terra.MakeLight(X, Y, 80);
+                Terra.MakeLight(X, Y, LightRadius);
             }
         }
         public void PreMoved()
@@ -81,7 +82,7 @@ namespace TerraQuake
                 int X = (int)P.X;
                 int Y = (int)P.Y;
 
-                Terra.ResetLight(X, Y, 90);
+                Terra.ResetLight(X, Y, LightRadius+10);
             }
         }
 
@@ -94,8 +95,8 @@ namespace TerraQuake
                 int X = (int)P.X;
                 int Y = (int)P.Y;
 
-                Terra.ResetLight(X, Y, 90);
-                Terra.MakeLight(X, Y, 80);
+                Terra.ResetLight(X, Y, LightRadius+10);
+                Terra.MakeLight(X, Y, LightRadius);
             }
         }
 
