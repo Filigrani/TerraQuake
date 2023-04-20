@@ -60,6 +60,44 @@ namespace TerraQuake
             return HowMuch;
         }
 
+        public void Moved()
+        {
+            if (ContentManager.Game.TerrainInstance != null)
+            {
+                Terrain Terra = ContentManager.Game.TerrainInstance;
+                Vector2 P = Object.Position + (ColisionBounds / 2);
+                int X = (int)P.X;
+                int Y = (int)P.Y;
+
+                Terra.MakeLight(X, Y, 80);
+            }
+        }
+        public void PreMoved()
+        {
+            if (ContentManager.Game.TerrainInstance != null)
+            {
+                Terrain Terra = ContentManager.Game.TerrainInstance;
+                Vector2 P = Object.Position + (ColisionBounds / 2);
+                int X = (int)P.X;
+                int Y = (int)P.Y;
+
+                Terra.ResetLight(X, Y, 90);
+            }
+        }
+
+        public void DarkRerender()
+        {
+            if (ContentManager.Game.TerrainInstance != null)
+            {
+                Terrain Terra = ContentManager.Game.TerrainInstance;
+                Vector2 P = Object.Position + (ColisionBounds / 2);
+                int X = (int)P.X;
+                int Y = (int)P.Y;
+
+                Terra.ResetLight(X, Y, 90);
+                Terra.MakeLight(X, Y, 80);
+            }
+        }
 
         public override void Update(GameTime gameTime)
         {
@@ -81,14 +119,18 @@ namespace TerraQuake
                 {
                     if (!LeftBlocked)
                     {
+                        PreMoved();
                         Object.Position.X--;
+                        Moved();
                     } else if (OnGround)
                     {
                         int HowMuch = CanClimb(Colision, Colision.Left - 1, -1);
                         if (HowMuch > 0)
                         {
+                            PreMoved();
                             Object.Position.X--;
                             Object.Position.Y -= HowMuch;
+                            Moved();
                         }
                     }
                 }
@@ -97,14 +139,18 @@ namespace TerraQuake
                 {
                     if (!RightBlocked)
                     {
+                        PreMoved();
                         Object.Position.X++;
+                        Moved();
                     } else if (OnGround)
                     {
                         int HowMuch = CanClimb(Colision, Colision.Right + 1, 1);
                         if (HowMuch > 0)
                         {
+                            PreMoved();
                             Object.Position.X++;
                             Object.Position.Y -= HowMuch;
+                            Moved();
                         }
                     }
                 }
@@ -112,30 +158,38 @@ namespace TerraQuake
 
             if (Velocity.Y != 0)
             {
+                PreMoved();
                 Velocity.Y--;
                 Object.Position.Y--;
+                Moved();
             }
 
             if (!OnGround)
             {
                 if(Velocity.Y == 0)
                 {
+                    PreMoved();
                     Object.Position.Y++;
+                    Moved();
                 }
                 if (Velocity.X != 0)
                 {
+                    PreMoved();
                     Object.Position.X++;
                     Velocity.X--;
+                    Moved();
                 }
             } else
             {
                 Velocity.X = 0;
             }
 
-            if (Input.KeyPressed(Keys.Y))
+            if (Input.KeyPressed(Keys.K))
             {
+                PreMoved();
                 Vector2 P = ContentManager.Game.GetPointer();
                 Object.Position = P;
+                Moved();
             }
         }
 

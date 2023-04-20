@@ -126,7 +126,7 @@ namespace TerraQuake
 
         public void PrepareLevels()
         {
-            bool Debug = true;
+            bool Debug = false;
             LevelManager.LevelConstructor GameLevel = new LevelManager.LevelConstructor();
             GameLevel.OnLevelStart = delegate ()
             {
@@ -140,11 +140,11 @@ namespace TerraQuake
                 Ghost.Position = new Vector2(SceneWidth / 2, -100);
                 MyGhost = Ghost.GetComponent(typeof(Ghost)) as Ghost;
 
-                if (DebugText == null)
-                {
-                    DebugText = new SpriteFont();
-                    DebugText.Font = ContentManager.GetSprite("DebugFont");
-                }
+                //if (DebugText == null)
+                //{
+                //    DebugText = new SpriteFont();
+                //    DebugText.Font = ContentManager.GetSprite("DebugFont");
+                //}
                 TerrainInstance = new Terrain();
                 TerrainInstance.CreateTerrain(228);
 

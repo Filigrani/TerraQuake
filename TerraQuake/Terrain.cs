@@ -21,8 +21,10 @@ namespace TerraQuake
 
         public TerrainPixel[] Pixels;
         public Color[] TerrainColorData;
+        public Color[] LightColorData;
         public Renderer Renderer = null;
         public Renderer RendererBackground = null;
+        public Renderer RendererLight = null;
         public GameObject TerrainObject = null;
         public bool ReadyForRender = false;
 
@@ -30,6 +32,7 @@ namespace TerraQuake
         public bool UpdateThreadsCreated = false;
         public Task UpdateTerrainThread = null;
         public bool TerrainHasBeenModified = false;
+        public bool LightHasBeenModified = false;
         public long LongetsUpdateMs = 0;
         public int LongetsRenderMs = 0;
         public List<TerrainHistoryEvent> TerrainHistory = new List<TerrainHistoryEvent>();
@@ -111,8 +114,10 @@ namespace TerraQuake
             Renderer = new Renderer("Objects");
             RendererBackground = new Renderer("BG");
             RendererBackground.Tint = new Color(167, 167, 167);
+            RendererLight = new Renderer("Objects");
             TerrainObject.AddComponent(Renderer, "Main");
             TerrainObject.AddComponent(RendererBackground, "BG");
+            TerrainObject.AddComponent(RendererLight, "Light");
             TerrainObject.Position = new Vector2(0, 0);
         }
 
@@ -126,6 +131,21 @@ namespace TerraQuake
             int Index = y * TerrainW + x;
             return Pixels[Index];
         }
+
+        public bool IsInsideTerrain(int x, int y)
+        {
+            if(x <= -1 || x >= TerrainW)
+            {
+                return false;
+            }else if(y <= -1 || y >= TerrainH)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+
         public class TerrainPixel
         {
             public Color Color = Color.Transparent;
@@ -722,7 +742,7 @@ namespace TerraQuake
                 Pixels[i] = new TerrainPixel();
                 Pixels[i].Color = TextureData[i];
             }
-            RenderTerrain(ContentManager.Game.GraphicsDevice);
+            RenderTerrain();
         }
 
         public void HillsGenerator()
@@ -782,7 +802,7 @@ namespace TerraQuake
                     }
                 }
             }
-            RenderTerrainBackground(ContentManager.Game.GraphicsDevice);
+            RenderTerrainBackground();
         }
 
         public void AdvancedGenerator()
@@ -859,7 +879,7 @@ namespace TerraQuake
                 }
             }
 
-            RenderTerrainBackground(ContentManager.Game.GraphicsDevice);
+            RenderTerrainBackground();
         }
         public void SolidGeneratorFallable()
         {
@@ -870,7 +890,7 @@ namespace TerraQuake
                 Px.HasBackground = true;
             }
 
-            RenderTerrainBackground(ContentManager.Game.GraphicsDevice);
+            RenderTerrainBackground();
         }
 
         public void SimpleGeneratorSnow()
@@ -918,11 +938,15 @@ namespace TerraQuake
                 }
             }
 
-            RenderTerrainBackground(ContentManager.Game.GraphicsDevice);
+            RenderTerrainBackground();
 
             for (int i = 1; i != 20; i++)
             {
                 AddPond(WorldGenRandom, 120);
+            }
+            for (int i = 1; i != 20; i++)
+            {
+                AddOre(WorldGenRandom, 305);
             }
         }
 
@@ -959,11 +983,30 @@ namespace TerraQuake
                 }
             }
 
-            RenderTerrainBackground(ContentManager.Game.GraphicsDevice);
+            RenderTerrainBackground();
 
             for (int i = 1; i != 20; i++)
             {
                 AddPond(WorldGenRandom);
+            }
+            for (int i = 1; i != 20; i++)
+            {
+                AddOre(WorldGenRandom, 150);
+            }
+        }
+
+        public void LightGeneration()
+        {
+            if (LightColorData == null)
+            {
+                LightColorData = new Color[TerrainW * TerrainH];
+            }
+            for (int iY = 0; iY < TerrainH; iY++)
+            {
+                for (int iX = 0; iX < TerrainW; iX++)
+                {
+                    LightColorData[GetIndex(iX, iY)] = Color.Black;
+                }
             }
         }
 
@@ -1104,7 +1147,9 @@ namespace TerraQuake
             SimpleGeneratorSnow();
             ReadyForRender = true;
             LocateChunks();
-            RenderTerrain(ContentManager.Game.GraphicsDevice);
+            LightGeneration();
+            RenderLight();
+            RenderTerrain();
         }
 
         public void BenchHoles()
@@ -1429,6 +1474,124 @@ namespace TerraQuake
             }
         }
 
+        public void AddOre(Random RNG, int HighestMine = -1)
+        {
+            int OreCenterX = RNG.Next(5, TerrainW);
+            int OreCenterY;
+
+            if (HighestMine != -1)
+            {
+                OreCenterY = RNG.Next(HighestMine, TerrainH);
+            } else
+            {
+                OreCenterY = RNG.Next(5, TerrainH);
+            }
+
+            Color OreColor = Color.Gold;
+            int OreChance = 3;
+            int OreRadiusMin = 5;
+            int OreRadiusMax = 7;
+
+            int Chance = RNG.Next(0, 100);
+            if (Chance < 20)
+            {
+                OreColor = Color.Aqua;
+                OreChance = 20;
+                OreRadiusMin = 2;
+                OreRadiusMax = 5;
+            } else if(Chance < 30)
+            {
+                OreColor = Color.Gold;
+                OreChance = 15;
+                OreRadiusMin = 5;
+                OreRadiusMax = 7;
+            } else if (Chance < 40)
+            {
+                OreColor = Color.PaleGreen;
+                OreChance = 20;
+                OreRadiusMin = 3;
+                OreRadiusMax = 5;
+            } else if (Chance < 60)
+            {
+                OreColor = Color.Lavender;
+                OreChance = 30;
+                OreRadiusMin = 3;
+                OreRadiusMax = 7;
+            } else
+            {
+                OreColor = Color.Black;
+                OreChance = 30;
+                OreRadiusMin = 5;
+                OreRadiusMax = 7;
+            }
+
+
+            int Childs = 21;
+            int MaxDistance = 20;
+            for (int i = 1; i != Childs; i++)
+            {
+                int ChildX = OreCenterX - RNG.Next(-MaxDistance, MaxDistance);
+                int ChildY = OreCenterY - RNG.Next(-MaxDistance, MaxDistance);
+
+                int Radius = RNG.Next(OreRadiusMin, OreRadiusMax);
+                int StartX = ChildX - Radius;
+                int EndX = ChildX + Radius;
+                int StartY = ChildY - Radius;
+                int EndY = ChildY + Radius;
+
+                if (StartX < 0)
+                {
+                    StartX = 0;
+                } else if (StartX > TerrainW)
+                {
+                    StartX = TerrainW;
+                }
+                if (EndX < 0)
+                {
+                    EndX = 0;
+                } else if (EndX > TerrainW)
+                {
+                    EndX = TerrainW;
+                }
+                if (StartY < 0)
+                {
+                    StartY = 0;
+                } else if (StartY > TerrainH)
+                {
+                    StartY = TerrainH;
+                }
+                if (EndY < 0)
+                {
+                    EndY = 0;
+                } else if (EndY > TerrainH)
+                {
+                    EndY = TerrainH;
+                }
+
+                for (int iY = StartY; iY != EndY; iY++)
+                {
+                    for (int iX = StartX; iX != EndX; iX++)
+                    {
+                        if(RNG.Next(0, 100) <= OreChance)
+                        {
+                            int num = iX - ChildX;
+                            int num2 = iY - ChildY;
+                            float Dis = MathF.Sqrt(num * num + num2 * num2);
+                            if (Dis <= Radius)
+                            {
+                                TerrainPixel Px = GetPixel(iX, iY);
+
+                                if(!Px.IsWater() && !Px.IsFallable() && !Px.IsAir())
+                                {
+                                    Px.Color = OreColor;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         public void RenderTerrainChanges()
         {
             if (TerrainColorData == null)
@@ -1438,7 +1601,7 @@ namespace TerraQuake
             Renderer.Sprite.SetData(TerrainColorData);
         }
 
-        public void RenderTerrainBackground(GraphicsDevice GDevice)
+        public void RenderTerrainBackground()
         {
             Color[] BackgroundColorData = new Color[TerrainW * TerrainH];
             int ColorX = 0;
@@ -1461,7 +1624,7 @@ namespace TerraQuake
             RendererBackground.SetSprite(BackgroundColorData, TerrainW, TerrainH);
         }
 
-        public void RenderTerrain(GraphicsDevice GDevice)
+        public void RenderTerrain()
         {
             if (TerrainColorData == null)
             {
@@ -1486,6 +1649,11 @@ namespace TerraQuake
                 ColorX++;
             }
             Renderer.SetSprite(TerrainColorData, TerrainW, TerrainH);
+        }
+
+        public void RenderLight()
+        {
+            RendererLight.SetSprite(LightColorData, TerrainW, TerrainH);
         }
 
         public int LastScanX = 0;
@@ -1763,6 +1931,192 @@ namespace TerraQuake
             return clone;
         }
 
+        public void MakeLight(int X, int Y, int Radius)
+        {
+            int StartX = X - Radius;
+            int EndX = X + Radius;
+            int StartY = Y - Radius;
+            int EndY = Y + Radius;
+
+            if (StartX < 0)
+            {
+                StartX = 0;
+            } else if (StartX > TerrainW)
+            {
+                StartX = TerrainW;
+            }
+            if (EndX < 0)
+            {
+                EndX = 0;
+            } else if (EndX > TerrainW)
+            {
+                EndX = TerrainW;
+            }
+            if (StartY < 0)
+            {
+                StartY = 0;
+            } else if (StartY > TerrainH)
+            {
+                StartY = TerrainH-1;
+            }
+            if (EndY < 0)
+            {
+                EndY = 0;
+            } else if (EndY > TerrainH)
+            {
+                EndY = TerrainH-1;
+            }
+
+            // Bottom edge
+            for (int iX = StartX; iX <= EndX; iX++)
+            {
+                TwoPoints(new Point(X, Y), new Point(iX, StartY), Radius);
+            }
+            // Upper Edge
+            for (int iX = StartX; iX <= EndX; iX++)
+            {
+                TwoPoints(new Point(X, Y), new Point(iX, EndY), Radius);
+            }
+            // Left Edge
+            for (int iY = StartY; iY <= EndY; iY++)
+            {
+                TwoPoints(new Point(X, Y), new Point(StartX, iY), Radius);
+            }
+            // Right Edge
+            for (int iY = StartY; iY <= EndY; iY++)
+            {
+                TwoPoints(new Point(X, Y), new Point(EndX, iY), Radius);
+            }
+            LightHasBeenModified = true;
+        }
+
+        public void ResetLight(int X, int Y, int Radius)
+        {
+            int StartX = X - Radius;
+            int EndX = X + Radius;
+            int StartY = Y - Radius;
+            int EndY = Y + Radius;
+
+            if (StartX < 0)
+            {
+                StartX = 0;
+            } else if (StartX > TerrainW)
+            {
+                StartX = TerrainW;
+            }
+            if (EndX < 0)
+            {
+                EndX = 0;
+            } else if (EndX > TerrainW)
+            {
+                EndX = TerrainW;
+            }
+            if (StartY < 0)
+            {
+                StartY = 0;
+            } else if (StartY > TerrainH)
+            {
+                StartY = TerrainH - 1;
+            }
+            if (EndY < 0)
+            {
+                EndY = 0;
+            } else if (EndY > TerrainH)
+            {
+                EndY = TerrainH - 1;
+            }
+            for (int iY = StartY; iY != EndY; iY++)
+            {
+                for (int iX = StartX; iX != EndX; iX++)
+                {
+                    LightColorData[GetIndex(iX, iY)] = Color.Black;
+                }
+            }
+        }
+
+        public void SetLight(Point pos1, Point pos2, int Radius)
+        {
+            int num = pos2.X - pos1.X;
+            int num2 = pos2.Y - pos1.Y;
+
+            int FullLightRadius = 0;
+            int ActualRadius = Radius;
+
+            float Dis = MathF.Sqrt(num * num + num2 * num2);
+            if(Dis <= ActualRadius)
+            {
+                int Index = GetIndex(pos2.X, pos2.Y);
+                TerrainPixel Px = Pixels[Index];
+
+                if(Dis <= FullLightRadius)
+                {
+                    LightColorData[Index] = Color.Transparent;
+                } else if(Dis <= ActualRadius)
+                {
+                    if (Px.IsAir())
+                    {
+                        LightColorData[Index] = Color.Transparent;
+                    } else
+                    {
+                        float Alpha = 0 + Dis/100;
+                        Color c = new Color(0, 0, 0, Alpha);
+                        LightColorData[Index] = c;
+                    }
+                }
+            }
+        }
+
+
+        //  Method by DavidMcLaughlin. Ported from Java to C# by Me.
+        // https://gist.github.com/DavidMcLaughlin208/60e69e698e3858617c322d80a8f174e2
+        public bool TwoPoints(Point pos1, Point pos2, int Radius)
+        {
+            if (pos1.Equals(pos2))
+            {
+                SetLight(pos1, pos1, Radius);
+            }
+
+            int matrixX1 = (int)pos1.X;
+            int matrixY1 = (int)pos1.Y;
+            int matrixX2 = (int)pos2.X;
+            int matrixY2 = (int)pos2.Y;
+
+            int xDiff = matrixX1 - matrixX2;
+            int yDiff = matrixY1 - matrixY2;
+            bool xDiffIsLarger = Math.Abs(xDiff) > Math.Abs(yDiff);
+
+            int xModifier = xDiff < 0 ? 1 : -1;
+            int yModifier = yDiff < 0 ? 1 : -1;
+
+            int longerSideLength = Math.Max(Math.Abs(xDiff), Math.Abs(yDiff));
+            int shorterSideLength = Math.Min(Math.Abs(xDiff), Math.Abs(yDiff));
+            float slope = (shorterSideLength == 0 || longerSideLength == 0) ? 0 : ((float)(shorterSideLength) / (longerSideLength));
+
+            int shorterSideIncrease;
+            for (int i = 1; i <= longerSideLength; i++)
+            {
+                shorterSideIncrease = (int) Math.Round((double)i * slope);
+                int yIncrease, xIncrease;
+                if (xDiffIsLarger)
+                {
+                    xIncrease = i;
+                    yIncrease = shorterSideIncrease;
+                } else
+                {
+                    yIncrease = i;
+                    xIncrease = shorterSideIncrease;
+                }
+                int currentY = matrixY1 + (yIncrease * yModifier);
+                int currentX = matrixX1 + (xIncrease * xModifier);
+                if (IsInsideTerrain(currentX, currentY))
+                {
+                    SetLight(pos1, new Point(currentX, currentY), Radius);
+                }
+            }
+            return false;
+        }
+
+
         public void Draw(GameTime gameTime, GraphicsDevice GDevice)
         {
             if (NoRenderUpdate || !ReadyForRender)
@@ -1773,6 +2127,14 @@ namespace TerraQuake
             {
                 RenderTerrainChanges();
                 TerrainHasBeenModified = false;
+                if(ContentManager.Game.MyGhost != null)
+                {
+                    ContentManager.Game.MyGhost.DarkRerender();
+                }
+            }
+            if (LightHasBeenModified)
+            {
+                RenderLight();
             }
         }
     }
