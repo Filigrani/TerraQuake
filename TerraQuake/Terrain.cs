@@ -33,7 +33,6 @@ namespace TerraQuake
         public bool UpdateThreadsCreated = false;
         public Task UpdateTerrainThread = null;
         public bool TerrainHasBeenModified = false;
-        public bool LightHasBeenModified = false;
         public long LongetsUpdateMs = 0;
         public int LongetsRenderMs = 0;
         public List<TerrainHistoryEvent> TerrainHistory = new List<TerrainHistoryEvent>();
@@ -996,21 +995,6 @@ namespace TerraQuake
             }
         }
 
-        public void LightGeneration()
-        {
-            if (LightColorData == null)
-            {
-                LightColorData = new Color[TerrainW * TerrainH];
-            }
-            for (int iY = 0; iY < TerrainH; iY++)
-            {
-                for (int iX = 0; iX < TerrainW; iX++)
-                {
-                    LightColorData[GetIndex(iX, iY)] = Color.Black;
-                }
-            }
-        }
-
         public void LocateChunks()
         {
             Color[] Colors = { Color.Red, Color.Green, Color.Yellow, Color.Blue, Color.Cyan, Color.Salmon };
@@ -1148,8 +1132,6 @@ namespace TerraQuake
             SimpleGeneratorSnow();
             ReadyForRender = true;
             LocateChunks();
-            LightGeneration();
-            RenderLight();
             RenderTerrain();
         }
 
@@ -1652,11 +1634,6 @@ namespace TerraQuake
             Renderer.SetSprite(TerrainColorData, TerrainW, TerrainH);
         }
 
-        public void RenderLight()
-        {
-            RendererLight.SetSprite(LightColorData, TerrainW, TerrainH);
-        }
-
         public int LastScanX = 0;
         public int LastScanXEnd = 0;
 
@@ -1915,10 +1892,6 @@ namespace TerraQuake
                     }
                 }
             }
-            if (Input.KeyPressed(Keys.L))
-            {
-                PixelsBlocksLight = !PixelsBlocksLight;
-            }
         }
 
         public static List<T> CloneList<T>(List<T> original)
@@ -1936,138 +1909,9 @@ namespace TerraQuake
             return clone;
         }
 
-        public void MakeLight(int X, int Y, int Radius)
-        {
-            
-            int StartX = X - Radius;
-            int EndX = X + Radius;
-            int StartY = Y - Radius;
-            int EndY = Y + Radius;
-
-            if (StartX < 0)
-            {
-                StartX = 0;
-            } else if (StartX > TerrainW)
-            {
-                StartX = TerrainW;
-            }
-            if (EndX < 0)
-            {
-                EndX = 0;
-            } else if (EndX > TerrainW)
-            {
-                EndX = TerrainW;
-            }
-            if (StartY < 0)
-            {
-                StartY = 0;
-            } else if (StartY > TerrainH)
-            {
-                StartY = TerrainH-1;
-            }
-            if (EndY < 0)
-            {
-                EndY = 0;
-            } else if (EndY > TerrainH)
-            {
-                EndY = TerrainH-1;
-            }
-            // Bottom edge
-            for (int iX = StartX; iX <= EndX; iX++)
-            {
-                TwoPoints(new Point(X, Y), new Point(iX, StartY), Radius);
-            }
-            // Upper Edge
-            for (int iX = StartX; iX <= EndX; iX++)
-            {
-                TwoPoints(new Point(X, Y), new Point(iX, EndY), Radius);
-            }
-            // Left Edge
-            for (int iY = StartY; iY <= EndY; iY++)
-            {
-                TwoPoints(new Point(X, Y), new Point(StartX, iY), Radius);
-            }
-            // Right Edge
-            for (int iY = StartY; iY <= EndY; iY++)
-            {
-                TwoPoints(new Point(X, Y), new Point(EndX, iY), Radius);
-            }
-            LightHasBeenModified = true;
-        }
-
-        public void ResetLight(int X, int Y, int Radius)
-        {
-            int StartX = X - Radius;
-            int EndX = X + Radius;
-            int StartY = Y - Radius;
-            int EndY = Y + Radius;
-
-            if (StartX < 0)
-            {
-                StartX = 0;
-            } else if (StartX > TerrainW)
-            {
-                StartX = TerrainW;
-            }
-            if (EndX < 0)
-            {
-                EndX = 0;
-            } else if (EndX > TerrainW)
-            {
-                EndX = TerrainW;
-            }
-            if (StartY < 0)
-            {
-                StartY = 0;
-            } else if (StartY > TerrainH)
-            {
-                StartY = TerrainH - 1;
-            }
-            if (EndY < 0)
-            {
-                EndY = 0;
-            } else if (EndY > TerrainH)
-            {
-                EndY = TerrainH - 1;
-            }
-            for (int iY = StartY; iY != EndY; iY++)
-            {
-                for (int iX = StartX; iX != EndX; iX++)
-                {
-                    LightColorData[GetIndex(iX, iY)] = Color.Black;
-                }
-            }
-        }
-
         public float ProcentFromDistance(float Distance, float MaxDistance)
         {
-            return  ((100f * Distance) / MaxDistance);
-        }
-
-        public bool PixelsBlocksLight = true;
-        public bool UseCloseLight = false;
-
-        public bool SetLight(Point pos1, Point pos2, int Radius)
-        {
-            int num = pos2.X - pos1.X;
-            int num2 = pos2.Y - pos1.Y;
-            float Dis = MathF.Sqrt(num * num + num2 * num2);
-            if (Dis <= Radius)
-            {
-                int Index = GetIndex(pos2.X, pos2.Y);
-                TerrainPixel Px = Pixels[Index];
-
-                bool AirOrWater = Px.IsAir() || Px.IsWater();
-                float Top = Radius;
-                float Alpha = 0.1f + ProcentFromDistance(Dis, Top) / 100;
-                Color c = new Color(0, 0, 0, Alpha);
-                LightColorData[Index] = c;
-                if (!AirOrWater)
-                {
-                    return false;
-                }
-            }
-            return true;
+            return ((100f * Distance) / MaxDistance);
         }
 
         //  Method by DavidMcLaughlin. Ported from Java to C# by Me.
@@ -2076,10 +1920,7 @@ namespace TerraQuake
         {
             if (pos1.Equals(pos2))
             {
-                if(!SetLight(pos2, pos2, Radius))
-                {
-                    return;
-                }
+
             }
 
             int matrixX1 = (int)pos1.X;
@@ -2098,10 +1939,6 @@ namespace TerraQuake
             int shorterSideLength = Math.Min(Math.Abs(xDiff), Math.Abs(yDiff));
             float slope = (shorterSideLength == 0 || longerSideLength == 0) ? 0 : ((float)(shorterSideLength) / (longerSideLength));
             int shorterSideIncrease;
-            Point ObstaclePosition = Point.Zero;
-            bool FoundObstacle = false;
-            float MaxDistanceBehindObstacle = 10;
-
             for (int i = 1; i <= longerSideLength; i++)
             {
                 shorterSideIncrease = (int) Math.Round((double)i * slope);
@@ -2121,29 +1958,6 @@ namespace TerraQuake
                 {
                     Point pos3 = new Point(currentX, currentY);
 
-                    if (FoundObstacle)
-                    {
-                        int num = pos3.X - ObstaclePosition.X;
-                        int num2 = pos3.Y - ObstaclePosition.Y;
-                        float Dis = MathF.Sqrt(num * num + num2 * num2);
-                        int num3 = pos1.X - ObstaclePosition.X;
-                        int num4 = pos1.Y - ObstaclePosition.Y;
-                        float Dis2 = MathF.Sqrt(num3 * num3 + num4 * num4);
-                        if (Dis <= MaxDistanceBehindObstacle - Dis2/100)
-                        {
-                            SetLight(pos1, pos3, Radius);
-                        }
-                    } else
-                    {
-                        if (!SetLight(pos1, pos3, Radius))
-                        {
-                            if (!FoundObstacle)
-                            {
-                                FoundObstacle = true;
-                                ObstaclePosition = pos3;
-                            }
-                        }
-                    }
                 }
             }
             return;
@@ -2159,15 +1973,6 @@ namespace TerraQuake
             if (TerrainHasBeenModified)
             {
                 RenderTerrainChanges();
-                TerrainHasBeenModified = false;
-                if(ContentManager.Game.MyGhost != null)
-                {
-                    ContentManager.Game.MyGhost.DarkRerender();
-                }
-            }
-            if (LightHasBeenModified)
-            {
-                RenderLight();
             }
         }
     }

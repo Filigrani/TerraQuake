@@ -137,6 +137,22 @@ namespace TerraQuake
                 }
             }
         }
+        public void Render(GameTime gameTime)
+        {
+            if (IsSleeping())
+            {
+                return;
+            }
+
+            foreach (var item in Components.ToList())
+            {
+                Dictionary<string, Component> Comps = item.Value;
+                foreach (var item2 in Comps)
+                {
+                    item2.Value.Render(gameTime);
+                }
+            }
+        }
         public void OnAnimationFinished(GameTime gameTime, string AnimationName, string SenderName) 
         {
             foreach (var item in Components)

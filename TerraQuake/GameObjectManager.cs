@@ -67,5 +67,12 @@ namespace TerraQuake
                 item.Value.Update(gameTime);
             }
         }
+        public static void Render(GameTime gameTime)
+        {
+            foreach (var item in Objects)
+            {
+                item.Value.Render(gameTime);
+            }
+        }
     }
 }

@@ -16,6 +16,7 @@ namespace TerraQuake
     {
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
+        public GameTime LastRenderGameTime = new GameTime();
 
         public int WindowWidth = 960;
         public int WindowHeight = 540;
@@ -83,6 +84,7 @@ namespace TerraQuake
             ContentManager.LoadSprite("DebugWhite");
             ContentManager.LoadSprite("SnowFlake0");
             ContentManager.LoadSprite("RainDrop");
+            ContentManager.LoadSprite("MainMenuBackground");
         }
         SpriteFont DebugText;
         internal Ghost MyGhost = null;
@@ -135,6 +137,8 @@ namespace TerraQuake
                 LayersManager.AddLayer("Objects");
                 LayersManager.AddLayer("Player");
                 LayersManager.AddLayer("Debug").Visible = Debug;
+                Layer Trans = LayersManager.AddLayer("Transition");
+                Trans.ScrollLock = true;
 
                 GameObject Ghost = CreateGhost();
                 Ghost.Position = new Vector2(SceneWidth / 2, -100);
@@ -174,6 +178,13 @@ namespace TerraQuake
             {
                 LayersManager.AddLayer("BG");
                 LayersManager.AddLayer("MainMenu");
+                Layer Trans = LayersManager.AddLayer("Transition");
+                Trans.ScrollLock = true;
+
+                GameObject BGobj = GameObjectManager.CreateObject();
+                Renderer Rend = new Renderer("BG");
+                Rend.SetSprite(ContentManager.GetSprite("MainMenuBackground"));
+                BGobj.AddComponent(Rend);
             };
 
             LevelManager.AddLevelConstructor("Game", GameLevel);
@@ -195,7 +206,7 @@ namespace TerraQuake
         {
             if (!GameStarted)
             {
-                LevelManager.StartLevel("Game");
+                LevelManager.StartLevel("Menu", false);
                 GameStarted = true;
             }
             //IsMouseVisible = false;
@@ -226,6 +237,14 @@ namespace TerraQuake
                         _graphics.IsFullScreen = true;
                         LayersManager.Scaler = 2;
                         _graphics.ApplyChanges();
+                    }
+                }
+
+                if (Input.KeyPressed(Keys.Enter))
+                {
+                    if(LevelManager.CurrentLevel == "Menu")
+                    {
+                        LevelManager.StartLevel("Game");
                     }
                 }
 
@@ -281,31 +300,34 @@ namespace TerraQuake
             WaveManager.Update(gameTime);
             base.Update(gameTime);
         }
+
+        public void ForceDraw()
+        {
+            Draw(LastRenderGameTime);
+        }
+
         protected override void Draw(GameTime gameTime)
         {
+            LastRenderGameTime = gameTime;
             GraphicsDevice.Clear(Color.SkyBlue);
-
+            GameObjectManager.Render(gameTime);
             LayersManager.Render(gameTime);
             string Text = "";
-            if (LevelManager.CurrentLevel == "Game")
+            if (DebugText != null)
             {
-                if(DebugText != null)
+                if (TerrainInstance != null && MyGhost != null)
                 {
-                    if (TerrainInstance != null && MyGhost != null)
-                    {
-                        Text = "Colide " + TerrainInstance.CheckCollision(MyGhost.GetPhysicalColision2())
-                            + "\nG " + MyGhost.OnGround + " L " + MyGhost.LeftBlocked + " R " + MyGhost.RightBlocked
-                            + "\nLast Scan X " + TerrainInstance.LastScanX + " " + TerrainInstance.LastScanXEnd
-                            + "\nLast Scan Y " + TerrainInstance.LastScanY + " " + TerrainInstance.LastScanYEnd
-                            + "\nLongest Update " + TerrainInstance.LongetsUpdateMs + "ms"
-                            + "\nChunks " + TerrainInstance.Chunks.Count + " ChunkRow " + TerrainInstance.ChunksRow
-                            + "\nLast Hole X " + TerrainInstance.LastHole.X + " Y " + TerrainInstance.LastHole.Y
-                            + "\nPos X " + MyGhost.Object.Position.X + " Y " + MyGhost.Object.Position.Y;
-                    }
-                    DebugText.SetText(Text);
+                    Text = "Colide " + TerrainInstance.CheckCollision(MyGhost.GetPhysicalColision2())
+                        + "\nG " + MyGhost.OnGround + " L " + MyGhost.LeftBlocked + " R " + MyGhost.RightBlocked
+                        + "\nLast Scan X " + TerrainInstance.LastScanX + " " + TerrainInstance.LastScanXEnd
+                        + "\nLast Scan Y " + TerrainInstance.LastScanY + " " + TerrainInstance.LastScanYEnd
+                        + "\nLongest Update " + TerrainInstance.LongetsUpdateMs + "ms"
+                        + "\nChunks " + TerrainInstance.Chunks.Count + " ChunkRow " + TerrainInstance.ChunksRow
+                        + "\nLast Hole X " + TerrainInstance.LastHole.X + " Y " + TerrainInstance.LastHole.Y
+                        + "\nPos X " + MyGhost.Object.Position.X + " Y " + MyGhost.Object.Position.Y;
                 }
+                DebugText.SetText(Text);
             }
-            
             foreach (SpriteFont Font in SpriteFont.SpriteFonts)
             {
                 Font.Render(_spriteBatch);

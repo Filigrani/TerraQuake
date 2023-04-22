@@ -13,6 +13,8 @@ namespace TerraQuake
         public GameObject Object = null;
 
         public virtual void Update(GameTime gameTime) { }
+
+        public virtual void Render(GameTime gameTime) { }
         public virtual void OnDestroy() { }
         public virtual void OnAttached() { }
         public virtual void OnAnimationFinished(GameTime gameTime, string AnimationName, string SenderName) { }

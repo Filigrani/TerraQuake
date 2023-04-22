@@ -63,41 +63,11 @@ namespace TerraQuake
 
         public void Moved()
         {
-            if (ContentManager.Game.TerrainInstance != null)
-            {
-                Terrain Terra = ContentManager.Game.TerrainInstance;
-                Vector2 P = Object.Position + (ColisionBounds / 2);
-                int X = (int)P.X;
-                int Y = (int)P.Y;
 
-                Terra.MakeLight(X, Y, LightRadius);
-            }
         }
         public void PreMoved()
         {
-            if (ContentManager.Game.TerrainInstance != null)
-            {
-                Terrain Terra = ContentManager.Game.TerrainInstance;
-                Vector2 P = Object.Position + (ColisionBounds / 2);
-                int X = (int)P.X;
-                int Y = (int)P.Y;
 
-                Terra.ResetLight(X, Y, LightRadius+10);
-            }
-        }
-
-        public void DarkRerender()
-        {
-            if (ContentManager.Game.TerrainInstance != null)
-            {
-                Terrain Terra = ContentManager.Game.TerrainInstance;
-                Vector2 P = Object.Position + (ColisionBounds / 2);
-                int X = (int)P.X;
-                int Y = (int)P.Y;
-
-                Terra.ResetLight(X, Y, LightRadius+10);
-                Terra.MakeLight(X, Y, LightRadius);
-            }
         }
 
         public override void Update(GameTime gameTime)
