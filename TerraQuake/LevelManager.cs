@@ -22,7 +22,7 @@ namespace TerraQuake
         }
 
         public static void CaptureLastFrame()
-        {   
+        {
             GraphicsDevice Device = ContentManager.Game.GraphicsDevice;
             int w = Device.PresentationParameters.BackBufferWidth;
             int h = Device.PresentationParameters.BackBufferHeight;
@@ -36,6 +36,12 @@ namespace TerraQuake
 
         public static void DoTransitionScreen()
         {
+            if(ContentManager.Game.WindowWidth != 960)
+            {
+                return;
+            }
+            
+            
             if(LastFrame == null)
             {
                 return;

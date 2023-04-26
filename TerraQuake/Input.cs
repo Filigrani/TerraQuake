@@ -29,10 +29,10 @@ namespace TerraQuake
         }
         private static void CheckButtonPressed()
         {
-            Keys[] Keys = PreviousKeyboardState.GetPressedKeys();
+            Keys[] Keys = CurrentKeyboardState.GetPressedKeys();
             foreach (Keys Key in Keys)
             {
-                if (CurrentKeyboardState.IsKeyUp(Key))
+                if (PreviousKeyboardState.IsKeyUp(Key))
                 {
                     KeysPressedThisFrame.Add(Key, true);
                 }

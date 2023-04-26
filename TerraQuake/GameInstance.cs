@@ -25,6 +25,14 @@ namespace TerraQuake
         public int SceneHeight = 540;
         public bool GameStarted = false;
 
+        public void ApplyChanges()
+        {
+            if (_graphics != null)
+            {
+                _graphics.ApplyChanges();
+            }
+        }
+
         public void ApplyReolustion(int W, int H, bool Apply = true)
         {
             WindowWidth = W;
@@ -33,7 +41,7 @@ namespace TerraQuake
             _graphics.PreferredBackBufferWidth = WindowWidth;
             if (Apply)
             {
-                _graphics.ApplyChanges();
+                ApplyChanges();
             }
         }
 
@@ -128,7 +136,6 @@ namespace TerraQuake
 
         public void PrepareLevels()
         {
-            bool Debug = false;
             LevelManager.LevelConstructor GameLevel = new LevelManager.LevelConstructor();
             GameLevel.OnLevelStart = delegate ()
             {
@@ -136,40 +143,46 @@ namespace TerraQuake
                 LayersManager.AddLayer("Weather").Parallax = new Vector2(30, 10);
                 LayersManager.AddLayer("Objects");
                 LayersManager.AddLayer("Player");
-                LayersManager.AddLayer("Debug").Visible = Debug;
+                LayersManager.AddLayer("Debug").Visible = Settings.ChunkDebugMode != Terrain.ChunksDebug.None;
                 Layer Trans = LayersManager.AddLayer("Transition");
                 Trans.ScrollLock = true;
+
+                if(DebugText == null)
+                {
+                    DebugText = new SpriteFont();
+                    DebugText.Font = ContentManager.GetSprite("DebugFont");
+                }
 
                 GameObject Ghost = CreateGhost();
                 Ghost.Position = new Vector2(SceneWidth / 2, -100);
                 MyGhost = Ghost.GetComponent(typeof(Ghost)) as Ghost;
-
-                //if (DebugText == null)
-                //{
-                //    DebugText = new SpriteFont();
-                //    DebugText.Font = ContentManager.GetSprite("DebugFont");
-                //}
                 TerrainInstance = new Terrain();
-                TerrainInstance.CreateTerrain(228);
-
+                TerrainInstance.TerrainH = Settings.DefaultTerrainH;
+                TerrainInstance.TerrainW = Settings.DefaultTerrainW;
+                TerrainInstance.CreateTerrain(Settings.TerrainSeed);
                 GameObject W = GameObjectManager.CreateObject();
-                WeatherParticles WCom = new WeatherParticles();
-                W.AddComponent(WCom);
-                Weather = WCom;
-                Weather.Terra = TerrainInstance;
 
-                Weather.MaterialOnImpact = WeatherParticles.ImpactMaterial.Water;
+                if(Settings.Weather != WeatherParticles.ImpactMaterial.None)
+                {
 
-                if (Weather.MaterialOnImpact == WeatherParticles.ImpactMaterial.Water)
-                {
-                    Weather.Sprite = ContentManager.GetSprite("RainDrop");
-                    Weather.ImpactSpawnRadius = 1;
-                    Weather.Gravity = 2f;
-                } else
-                {
-                    Weather.Sprite = ContentManager.GetSprite("SnowFlake0");
-                    Weather.ImpactSpawnRadius = 2;
-                    Weather.Gravity = 0.5f;
+                    WeatherParticles WCom = new WeatherParticles();
+                    W.AddComponent(WCom);
+                    Weather = WCom;
+                    Weather.Terra = TerrainInstance;
+
+                    Weather.MaterialOnImpact = Settings.Weather;
+
+                    if (Weather.MaterialOnImpact == WeatherParticles.ImpactMaterial.Water)
+                    {
+                        Weather.Sprite = ContentManager.GetSprite("RainDrop");
+                        Weather.ImpactSpawnRadius = 1;
+                        Weather.Gravity = 2f;
+                    } else
+                    {
+                        Weather.Sprite = ContentManager.GetSprite("SnowFlake0");
+                        Weather.ImpactSpawnRadius = 2;
+                        Weather.Gravity = 0.5f;
+                    }
                 }
             };
 
@@ -185,6 +198,12 @@ namespace TerraQuake
                 Renderer Rend = new Renderer("BG");
                 Rend.SetSprite(ContentManager.GetSprite("MainMenuBackground"));
                 BGobj.AddComponent(Rend);
+                BGobj.AddComponent(new MainMenuLogic());
+                if (DebugText != null)
+                {
+                    DebugText.Destory();
+                    DebugText = null;
+                }
             };
 
             LevelManager.AddLevelConstructor("Game", GameLevel);
@@ -214,35 +233,41 @@ namespace TerraQuake
             {
                 TerrainInstance.Update();
             }
-            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
-            {
-                Exit();
-            }
 
             if (IsActive)
             {
                 Input.Update();
 
-                if(Input.KeyPressed(Keys.F11) || Input.KeyPressed(Keys.F))
+                if (Input.KeyPressed(Keys.Escape))
+                {
+                    if (LevelManager.CurrentLevel == "Menu")
+                    {
+                        Exit();
+                    } else
+                    {
+                        LevelManager.StartLevel("Menu");
+                    }
+                }
+
+                if (Input.KeyPressed(Keys.F11) || Input.KeyPressed(Keys.F))
                 {
                     if (_graphics.IsFullScreen == true)
                     {
                         ApplyReolustion(960, 540, false);
                         _graphics.IsFullScreen = false;
                         LayersManager.Scaler = 1;
-                        _graphics.ApplyChanges();
+                        ApplyChanges();
                     } else
                     {
                         ApplyReolustion(1920, 1080, false);
-                        _graphics.IsFullScreen = true;
+                        //_graphics.IsFullScreen = true;
                         LayersManager.Scaler = 2;
-                        _graphics.ApplyChanges();
+                        ApplyChanges();
                     }
                 }
-
-                if (Input.KeyPressed(Keys.Enter))
+                if (Input.KeyPressed(Keys.F5))
                 {
-                    if(LevelManager.CurrentLevel == "Menu")
+                    if (LevelManager.CurrentLevel == "Game")
                     {
                         LevelManager.StartLevel("Game");
                     }
@@ -315,16 +340,27 @@ namespace TerraQuake
             string Text = "";
             if (DebugText != null)
             {
+                //if (TerrainInstance != null && MyGhost != null)
+                //{
+                //    Text = "Colide " + TerrainInstance.CheckCollision(MyGhost.GetPhysicalColision2())
+                //        + "\nG " + MyGhost.OnGround + " L " + MyGhost.LeftBlocked + " R " + MyGhost.RightBlocked
+                //        + "\nLast Scan X " + TerrainInstance.LastScanX + " " + TerrainInstance.LastScanXEnd
+                //        + "\nLast Scan Y " + TerrainInstance.LastScanY + " " + TerrainInstance.LastScanYEnd
+                //        + "\nLongest Update " + TerrainInstance.LongetsUpdateMs + "ms"
+                //        + "\nChunks " + TerrainInstance.Chunks.Count + " ChunkRow " + TerrainInstance.ChunksRow
+                //        + "\nLast Hole X " + TerrainInstance.LastHole.X + " Y " + TerrainInstance.LastHole.Y
+                //        + "\nPos X " + MyGhost.Object.Position.X + " Y " + MyGhost.Object.Position.Y;
+                //}
                 if (TerrainInstance != null && MyGhost != null)
                 {
-                    Text = "Colide " + TerrainInstance.CheckCollision(MyGhost.GetPhysicalColision2())
-                        + "\nG " + MyGhost.OnGround + " L " + MyGhost.LeftBlocked + " R " + MyGhost.RightBlocked
-                        + "\nLast Scan X " + TerrainInstance.LastScanX + " " + TerrainInstance.LastScanXEnd
-                        + "\nLast Scan Y " + TerrainInstance.LastScanY + " " + TerrainInstance.LastScanYEnd
-                        + "\nLongest Update " + TerrainInstance.LongetsUpdateMs + "ms"
-                        + "\nChunks " + TerrainInstance.Chunks.Count + " ChunkRow " + TerrainInstance.ChunksRow
-                        + "\nLast Hole X " + TerrainInstance.LastHole.X + " Y " + TerrainInstance.LastHole.Y
-                        + "\nPos X " + MyGhost.Object.Position.X + " Y " + MyGhost.Object.Position.Y;
+                    Text = "T - Make Hole"
+                        + "\nY - Ball of snow"
+                        + "\nU - Water"
+                        + "\nB Benchmark holes"
+                        + "\nR - New terrain"
+                        + "\nK - Teleport"
+                        + "\nF5 - Restart level" 
+                        + "\nEsc - Back to menu";
                 }
                 DebugText.SetText(Text);
             }

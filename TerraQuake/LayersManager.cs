@@ -13,9 +13,11 @@ namespace TerraQuake
         public static Dictionary<string, int> LayersIndexes = new Dictionary<string, int>();
         public static Vector2 Scrolling = new Vector2(0, 0);
         public static Vector2 DesiredScrolling = new Vector2(0, 0);
+        public static Vector2 LastScrollPosition = new Vector2(0, 0);
         public static bool SmoothScrolling = false;
         public static float SmoothnessAmout = 8;
-        public static int Scaler = 1;
+        public static float Scaler = 1;
+        public static Vector2 ScrollOffset = new Vector2(0, 0);
 
         public static void Wipe(bool DeleteLayers = false)
         {
@@ -76,8 +78,9 @@ namespace TerraQuake
 
         public static void ScrollTo(Vector2 ScrollPosition)
         {
+            LastScrollPosition = ScrollPosition;
             Vector2 OnScreenPosition = new Vector2(ContentManager.Game.SceneWidth / 2, ContentManager.Game.SceneHeight / 2);
-            Vector2 ScrollTo = new Vector2(OnScreenPosition.X + -ScrollPosition.X, OnScreenPosition.Y + -ScrollPosition.Y) * Scaler;
+            Vector2 ScrollTo = new Vector2(OnScreenPosition.X + -ScrollPosition.X, OnScreenPosition.Y + -ScrollPosition.Y) * Scaler + ScrollOffset;
 
             if (!SmoothScrolling)
             {

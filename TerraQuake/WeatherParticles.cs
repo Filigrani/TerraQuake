@@ -32,6 +32,7 @@ namespace TerraQuake
             None = 0,
             Snow,
             Water,
+            Count,
         }
 
         public override void Update(GameTime gameTime)

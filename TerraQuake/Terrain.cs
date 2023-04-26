@@ -44,7 +44,6 @@ namespace TerraQuake
 
 
         //Debug Flags 
-        public ChunksDebug ChunksDebugMode = ChunksDebug.None;
         public bool ManualUpdate = false;
         public bool NoRenderUpdate = false;
         public bool AlertNearChunksAnyWay = false;
@@ -56,6 +55,14 @@ namespace TerraQuake
             ManyColorsAlways = 2,
             OneColorWhenUpdated = 3,
             ManyColorsWhenUpdated = 4,
+            Count,
+        }
+
+        public enum GenerationStyle
+        {
+            Simple,
+            SimpleSnow,
+            Count,
         }
 
 
@@ -83,6 +90,7 @@ namespace TerraQuake
             None,
             Hole,
             Snow,
+            Count,
         }
         public class TerrainHistoryEvent
         {
@@ -991,15 +999,15 @@ namespace TerraQuake
             }
             for (int i = 1; i != 20; i++)
             {
-                AddOre(WorldGenRandom, 150);
+                AddOre(WorldGenRandom, 105);
             }
         }
 
         public void LocateChunks()
         {
             Color[] Colors = { Color.Red, Color.Green, Color.Yellow, Color.Blue, Color.Cyan, Color.Salmon };
-            bool OneColor = ChunksDebugMode == ChunksDebug.OneColorAlways || ChunksDebugMode == ChunksDebug.OneColorWhenUpdated;
-            bool DebugColors = ChunksDebugMode != ChunksDebug.None;
+            bool OneColor = Settings.ChunkDebugMode == ChunksDebug.OneColorAlways || Settings.ChunkDebugMode == ChunksDebug.OneColorWhenUpdated;
+            bool DebugColors = Settings.ChunkDebugMode != ChunksDebug.None;
             int ColorIndex = 0;
             Texture2D DebugTex = ContentManager.GetSprite("DebugWhite");
             Chunks.Clear();
@@ -1124,12 +1132,25 @@ namespace TerraQuake
             ShuffleRandom = new Random(Seed);
             WorldGenRandom = new Random(Seed);
             Pixels = new TerrainPixel[TerrainW * TerrainH];
-            //SimpleGenerator();
+
+            switch (Settings.TerrainStyle)
+            {
+                case GenerationStyle.Simple:
+                    SimpleGenerator();
+                    break;
+                case GenerationStyle.SimpleSnow:
+                    SimpleGeneratorSnow();
+                    break;
+                default:
+                    SolidGenerator();
+                    break;
+            }
+
             //AdvancedGenerator();
             //HillsGenerator();
             //SolidGenerator();
             //SolidGeneratorFallable();
-            SimpleGeneratorSnow();
+            
             ReadyForRender = true;
             LocateChunks();
             RenderTerrain();
@@ -1462,7 +1483,7 @@ namespace TerraQuake
             int OreCenterX = RNG.Next(5, TerrainW);
             int OreCenterY;
 
-            if (HighestMine != -1)
+            if (HighestMine != -1 && HighestMine < TerrainH)
             {
                 OreCenterY = RNG.Next(HighestMine, TerrainH);
             } else
@@ -1788,8 +1809,8 @@ namespace TerraQuake
 
         public void Update()
         {
-            bool Always = ChunksDebugMode == ChunksDebug.OneColorAlways || ChunksDebugMode == ChunksDebug.ManyColorsAlways;
-            bool DebugColors = ChunksDebugMode != ChunksDebug.None;
+            bool Always = Settings.ChunkDebugMode == ChunksDebug.OneColorAlways || Settings.ChunkDebugMode == ChunksDebug.ManyColorsAlways;
+            bool DebugColors = Settings.ChunkDebugMode != ChunksDebug.None;
 
             if (DebugColors)
             {

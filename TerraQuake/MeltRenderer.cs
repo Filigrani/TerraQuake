@@ -17,7 +17,7 @@ namespace TerraQuake
         public int SliceSize = 4;
         public int Push = 8;
         public int ProcessesRequired = 0;
-        pu
+        public int ImagePushRequired = 0;
         public Task UpdateThread = null;
         public bool UpdateThreadCreated = false;
 
@@ -68,6 +68,7 @@ namespace TerraQuake
             }
 
             ProcessesRequired = LongestOffset;
+            ImagePushRequired = MyRenderer.Sprite.Height / Push;
         }
 
         public void Melting()
@@ -132,8 +133,14 @@ namespace TerraQuake
                     }
                 } else
                 {
-                    GameObjectManager.DestroyObject(Object.GUID);
-
+                    if(ImagePushRequired > 0)
+                    {
+                        Object.Position.Y += 8;
+                        ImagePushRequired--;
+                    } else
+                    {
+                        GameObjectManager.DestroyObject(Object.GUID);
+                    }
                 }
             }
         }

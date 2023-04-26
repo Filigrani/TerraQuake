@@ -62,7 +62,7 @@ namespace TerraQuake
         }
         public static void Update(GameTime gameTime)
         {
-            foreach (var item in Objects)
+            foreach (var item in Objects.ToList())
             {
                 item.Value.Update(gameTime);
             }
