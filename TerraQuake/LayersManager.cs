@@ -79,9 +79,8 @@ namespace TerraQuake
         public static void ScrollTo(Vector2 ScrollPosition)
         {
             LastScrollPosition = ScrollPosition;
-            Vector2 OnScreenPosition = new Vector2(ContentManager.Game.SceneWidth / 2, ContentManager.Game.SceneHeight / 2);
+            Vector2 OnScreenPosition = new Vector2(ContentManager.Game.VirtualWidth / 2, ContentManager.Game.VirtualHeight / 2);
             Vector2 ScrollTo = new Vector2(OnScreenPosition.X + -ScrollPosition.X, OnScreenPosition.Y + -ScrollPosition.Y) * Scaler + ScrollOffset;
-
             if (!SmoothScrolling)
             {
                 Scrolling = ScrollTo;

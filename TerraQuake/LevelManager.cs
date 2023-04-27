@@ -111,6 +111,8 @@ namespace TerraQuake
         }
         public static void UnloadLevel()
         {
+            ContentManager.Game.MyGhost = null;
+            ContentManager.Game.TerrainInstance = null;
             GameObjectManager.Wipe();
             LayersManager.Wipe(true);
             LayersManager.Reset();

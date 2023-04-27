@@ -21,8 +21,8 @@ namespace TerraQuake
         public int WindowWidth = 960;
         public int WindowHeight = 540;
 
-        public int SceneWidth = 960;
-        public int SceneHeight = 540;
+        public int VirtualWidth = 960;
+        public int VirtualHeight = 540;
         public bool GameStarted = false;
 
         public void ApplyChanges()
@@ -31,6 +31,24 @@ namespace TerraQuake
             {
                 _graphics.ApplyChanges();
             }
+        }
+
+        public Matrix GetScaleMatrix()
+        {
+            var scaleX = (float)WindowWidth / VirtualWidth;
+            var scaleY = (float)WindowHeight / VirtualHeight;
+            return Matrix.CreateScale(scaleX, scaleY, 1.0f);
+        }
+
+        public Point PointToScreen(Point point)
+        {
+            var matrix = Matrix.Invert(GetScaleMatrix());
+            return Vector2.Transform(point.ToVector2(), matrix).ToPoint();
+        }
+        public Vector2 VectorToScreen(Vector2 V2)
+        {
+            var matrix = Matrix.Invert(GetScaleMatrix());
+            return Vector2.Transform(V2, matrix);
         }
 
         public void ApplyReolustion(int W, int H, bool Apply = true)
@@ -93,6 +111,7 @@ namespace TerraQuake
             ContentManager.LoadSprite("SnowFlake0");
             ContentManager.LoadSprite("RainDrop");
             ContentManager.LoadSprite("MainMenuBackground");
+            ContentManager.LoadSprite("TerraQuakeLogo");
         }
         SpriteFont DebugText;
         internal Ghost MyGhost = null;
@@ -103,31 +122,18 @@ namespace TerraQuake
         {
             GameObject GhostObj = GameObjectManager.CreateObject();
             Ghost GhostComp = new Ghost();
+            GameObject GhostRenderObject = GameObjectManager.CreateObject();
 
             Renderer RenderBody = new Renderer("Player");
-            Renderer RenderGun = new Renderer("Player");
-            Renderer RenderHands = new Renderer("Player");
             Animator AnimatorBody = new Animator();
-            Animator AnimatorHands = new Animator();
-            Animator AnimatorGun = new Animator();
             DebugRenderer DebugRender = new DebugRenderer("Debug", new Rectangle(0, 0, (int)GhostComp.ColisionBounds.X, (int)GhostComp.ColisionBounds.Y));
             DebugRender.RenderOffset = GhostComp.ColisionOffset;
             AnimatorBody.MyRenderer = RenderBody;
-            AnimatorHands.MyRenderer = RenderHands;
-            AnimatorGun.MyRenderer = RenderGun;
             GhostComp.RendererBody = RenderBody;
             GhostComp.AnimatorBody = AnimatorBody;
-
-            RenderHands.RenderOffset = new Vector2(5, 9);
-            RenderGun.RenderOffset = new Vector2(51, 10);
-
-            GhostObj.AddComponent(AnimatorBody, "AnimatorBody");
-            GhostObj.AddComponent(AnimatorHands, "AnimatorHands");
-            GhostObj.AddComponent(AnimatorGun, "AnimatorGun");
-            GhostObj.AddComponent(RenderBody, "RenderBody");
-            GhostObj.AddComponent(RenderHands, "RenderHands");
-            GhostObj.AddComponent(RenderGun, "RenderGun");
-            GhostObj.AddComponent(DebugRender);
+            GhostRenderObject.AddComponent(DebugRender, "Debug");
+            GhostRenderObject.AddComponent(RenderBody, "Body");
+            GhostRenderObject.AddComponent(AnimatorBody);
             GhostObj.AddComponent(GhostComp);
             GhostObj.CanSleep = false;
 
@@ -154,7 +160,7 @@ namespace TerraQuake
                 }
 
                 GameObject Ghost = CreateGhost();
-                Ghost.Position = new Vector2(SceneWidth / 2, -100);
+                Ghost.Position = new Vector2(VirtualWidth / 2, -100);
                 MyGhost = Ghost.GetComponent(typeof(Ghost)) as Ghost;
                 TerrainInstance = new Terrain();
                 TerrainInstance.TerrainH = Settings.DefaultTerrainH;
@@ -197,7 +203,11 @@ namespace TerraQuake
                 GameObject BGobj = GameObjectManager.CreateObject();
                 Renderer Rend = new Renderer("BG");
                 Rend.SetSprite(ContentManager.GetSprite("MainMenuBackground"));
+                Renderer RendLogo = new Renderer("BG");
+                RendLogo.SetSprite(ContentManager.GetSprite("TerraQuakeLogo"));
+                RendLogo.RenderOffset = new Vector2(VirtualWidth/2-RendLogo.Sprite.Width/2, VirtualHeight/2 - RendLogo.Sprite.Height / 2);
                 BGobj.AddComponent(Rend);
+                BGobj.AddComponent(RendLogo, "Logo");
                 BGobj.AddComponent(new MainMenuLogic());
                 if (DebugText != null)
                 {
@@ -309,13 +319,6 @@ namespace TerraQuake
                 {
                     if (MyGhost != null)
                     {
-                        MyGhost.Jump();
-                    }
-                }
-                if (Keyboard.GetState().IsKeyDown(Keys.Enter))
-                {
-                    if (MyGhost != null)
-                    {
                         MyGhost.JumpForward();
                     }
                 }
@@ -340,28 +343,28 @@ namespace TerraQuake
             string Text = "";
             if (DebugText != null)
             {
-                //if (TerrainInstance != null && MyGhost != null)
-                //{
-                //    Text = "Colide " + TerrainInstance.CheckCollision(MyGhost.GetPhysicalColision2())
-                //        + "\nG " + MyGhost.OnGround + " L " + MyGhost.LeftBlocked + " R " + MyGhost.RightBlocked
-                //        + "\nLast Scan X " + TerrainInstance.LastScanX + " " + TerrainInstance.LastScanXEnd
-                //        + "\nLast Scan Y " + TerrainInstance.LastScanY + " " + TerrainInstance.LastScanYEnd
-                //        + "\nLongest Update " + TerrainInstance.LongetsUpdateMs + "ms"
-                //        + "\nChunks " + TerrainInstance.Chunks.Count + " ChunkRow " + TerrainInstance.ChunksRow
-                //        + "\nLast Hole X " + TerrainInstance.LastHole.X + " Y " + TerrainInstance.LastHole.Y
-                //        + "\nPos X " + MyGhost.Object.Position.X + " Y " + MyGhost.Object.Position.Y;
-                //}
                 if (TerrainInstance != null && MyGhost != null)
                 {
-                    Text = "T - Make Hole"
-                        + "\nY - Ball of snow"
-                        + "\nU - Water"
-                        + "\nB Benchmark holes"
-                        + "\nR - New terrain"
-                        + "\nK - Teleport"
-                        + "\nF5 - Restart level" 
-                        + "\nEsc - Back to menu";
+                    Text = "Colide " + TerrainInstance.CheckCollision(MyGhost.GetPhysicalColision2())
+                        + "\nG " + MyGhost.OnGround + " L " + MyGhost.LeftBlocked + " R " + MyGhost.RightBlocked
+                        + "\nLast Scan X " + TerrainInstance.LastScanX + " " + TerrainInstance.LastScanXEnd
+                        + "\nLast Scan Y " + TerrainInstance.LastScanY + " " + TerrainInstance.LastScanYEnd
+                        + "\nLongest Update " + TerrainInstance.LongetsUpdateMs + "ms"
+                        + "\nChunks " + TerrainInstance.Chunks.Count + " ChunkRow " + TerrainInstance.ChunksRow
+                        + "\nLast Hole X " + TerrainInstance.LastHole.X + " Y " + TerrainInstance.LastHole.Y
+                        + "\nPos X " + MyGhost.Object.Position.X + " Y " + MyGhost.Object.Position.Y;
                 }
+                //if (TerrainInstance != null && MyGhost != null)
+                //{
+                //    Text = "T - Make Hole"
+                //        + "\nY - Ball of snow"
+                //        + "\nU - Water"
+                //        + "\nB Benchmark holes"
+                //        + "\nR - New terrain"
+                //        + "\nK - Teleport"
+                //        + "\nF5 - Restart level" 
+                //        + "\nEsc - Back to menu";
+                //}
                 DebugText.SetText(Text);
             }
             foreach (SpriteFont Font in SpriteFont.SpriteFonts)

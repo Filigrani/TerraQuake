@@ -29,7 +29,7 @@ namespace TerraQuake
             SelectedElement = 0;
             if (Index == 0)
             {
-                Elements = 1;
+                Elements = 2;
             }else if(Index == 1)
             {
                 Elements = 6;
@@ -63,8 +63,11 @@ namespace TerraQuake
                     } else if(SelectedElement == 0)
                     {
                         LevelManager.StartLevel("Game");
+                    } else if (SelectedElement == 2)
+                    {
+                        ContentManager.Game.Exit();
                     }
-                }else if(MenuIndex == 1)
+                } else if(MenuIndex == 1)
                 {
                     if (SelectedElement == 6)
                     {
@@ -112,6 +115,9 @@ namespace TerraQuake
                     } else if (SelectedElement == 0)
                     {
                         LevelManager.StartLevel("Game");
+                    } else if (SelectedElement == 2)
+                    {
+                        ContentManager.Game.Exit();
                     }
                 } else if (MenuIndex == 1)
                 {
@@ -144,7 +150,7 @@ namespace TerraQuake
                             LayersManager.Scaler = 2;
                             LayersManager.ScrollOffset = Vector2.Zero;
                             ContentManager.Game.ApplyChanges();
-                        }else if (ContentManager.Game.WindowWidth == 1024)
+                        }else if (ContentManager.Game.WindowWidth == 2560)
                         {
                             ContentManager.Game.ApplyReolustion(960, 540, false);
                             LayersManager.Scaler = 1;
@@ -156,13 +162,19 @@ namespace TerraQuake
                             LayersManager.Scaler = 1;
                             LayersManager.ScrollOffset = new Vector2(32, 114);
                             ContentManager.Game.ApplyChanges();
+                        } else if (ContentManager.Game.WindowWidth == 1024)
+                        {
+                            ContentManager.Game.ApplyReolustion(2560, 1080, false);
+                            LayersManager.Scaler = 3;
+                            LayersManager.ScrollOffset = new Vector2(32, 114);
+                            ContentManager.Game.ApplyChanges();
                         }
                     } else if (SelectedElement == 2)
                     {
                         Settings.DefaultTerrainW += 100;
                     } else if (SelectedElement == 3)
                     {
-                        Settings.DefaultTerrainW += 200;
+                        Settings.DefaultTerrainH += 200;
                     }
                 }
             }
@@ -191,7 +203,8 @@ namespace TerraQuake
                 if(MenuIndex == 0)
                 {
                     MenuText += "\n" + SelectMarker(0) + "Start"
-                    + "\n" + SelectMarker(1) + "Settings";
+                    + "\n" + SelectMarker(1) + "Settings"
+                    + "\n" + SelectMarker(2) + "Exit";
                 } else if(MenuIndex == 1)
                 {
                     MenuText += "\n" + "Video" + "\n"

@@ -20,9 +20,6 @@ namespace TerraQuake
         public Vector2 ColisionBounds = new Vector2(22, 30);
         public Vector2 ColisionOffset = new Vector2(9, 4);
         public Animator AnimatorBody = null;
-        public TimeSpan NextBlink = TimeSpan.Zero;
-        public TimeSpan NextBob = TimeSpan.Zero;
-        public TimeSpan StartIdleTime = TimeSpan.FromSeconds(10);
         public bool Side = true;
         public static List<Ghost> Ghosts = new List<Ghost>();
         public int InsertAmmo = 0;
@@ -30,20 +27,40 @@ namespace TerraQuake
         public bool OnGround = false;
         public bool RightBlocked = false;
         public bool LeftBlocked = false;
+        public bool UpBlocked = false;
         public int ClimbHeigh = 8;
         public int LightRadius = 120;
 
-        public int CanClimb(Microsoft.Xna.Framework.Rectangle Colision, int Side, int X)
+        public int CanClimb(Microsoft.Xna.Framework.Rectangle Colision, bool Right)
         {
             int HowMuch = 0;
             Terrain Terra = ContentManager.Game.TerrainInstance;
+            int X;
+            int RectX;
+
+            if (Right)
+            {
+                X = Colision.X + Colision.Width - 1;
+                RectX = Colision.X++;
+            } else
+            {
+                X = Colision.X - 1;
+                RectX = Colision.X--;
+            }
             for (int i = 1; i < ClimbHeigh; i++)
             {
-                if(Colision.Bottom - i >= 0)
+                int iY = Colision.Bottom - i;
+
+                if(iY >= 0)
                 {
-                    if (!Terra.GetPixel(Side, Colision.Bottom - i).IsAir())
+                    Terrain.TerrainPixel Px = Terra.GetPixel(X, iY);
+                    if (!Px.IsAir() && !Px.IsWater())
                     {
                         HowMuch++;
+                    } else
+                    {
+                        HowMuch++;
+                        break;
                     }
                 } else
                 {
@@ -51,8 +68,7 @@ namespace TerraQuake
                     break;
                 }
             }
-
-            Microsoft.Xna.Framework.Rectangle FutureColision = new Microsoft.Xna.Framework.Rectangle(Colision.X + X, Colision.Y-HowMuch, Colision.Width, Colision.Height);
+            Microsoft.Xna.Framework.Rectangle FutureColision = new Microsoft.Xna.Framework.Rectangle(RectX, Colision.Y-HowMuch, Colision.Width, Colision.Height);
             if (Terra.CheckCollision(FutureColision))
             {
                 HowMuch = 0;
@@ -76,13 +92,17 @@ namespace TerraQuake
             LayersManager.ScrollTo(Object.Position);
             Microsoft.Xna.Framework.Rectangle Colision = GetPhysicalColision2();
             Microsoft.Xna.Framework.Rectangle Tail = new Microsoft.Xna.Framework.Rectangle(Colision.Left, Colision.Bottom, Colision.Width, 1);
+            Microsoft.Xna.Framework.Rectangle Head = new Microsoft.Xna.Framework.Rectangle(Colision.X, Colision.Top, Colision.Width, 1);
             Microsoft.Xna.Framework.Rectangle RightSide = new Microsoft.Xna.Framework.Rectangle(Colision.Right+1, Colision.Top, 1, Colision.Height);
             Microsoft.Xna.Framework.Rectangle LeftSide = new Microsoft.Xna.Framework.Rectangle(Colision.Left-1, Colision.Top, 1, Colision.Height);
             OnGround = ContentManager.Game.TerrainInstance.CheckCollision(Tail);
             RightBlocked = ContentManager.Game.TerrainInstance.CheckCollision(RightSide);
             LeftBlocked = ContentManager.Game.TerrainInstance.CheckCollision(LeftSide);
+            UpBlocked = ContentManager.Game.TerrainInstance.CheckCollision(Head);
 
             RendererBody.Scale = 0.5f;
+            float dt = gameTime.ElapsedGameTime.Milliseconds;
+            RendererBody.Object.Position = Vector2.Lerp(RendererBody.Object.Position, Object.Position, dt * 0.05f);
 
             if (OnGround)
             {
@@ -95,7 +115,7 @@ namespace TerraQuake
                         Moved();
                     } else if (OnGround)
                     {
-                        int HowMuch = CanClimb(Colision, Colision.Left - 1, -1);
+                        int HowMuch = CanClimb(Colision, false);
                         if (HowMuch > 0)
                         {
                             PreMoved();
@@ -104,6 +124,7 @@ namespace TerraQuake
                             Moved();
                         }
                     }
+                    RendererBody.SpriteEffect= SpriteEffects.FlipHorizontally;
                 }
 
                 if (Keyboard.GetState().IsKeyDown(Keys.D))
@@ -115,7 +136,7 @@ namespace TerraQuake
                         Moved();
                     } else if (OnGround)
                     {
-                        int HowMuch = CanClimb(Colision, Colision.Right + 1, 1);
+                        int HowMuch = CanClimb(Colision, true);
                         if (HowMuch > 0)
                         {
                             PreMoved();
@@ -124,7 +145,24 @@ namespace TerraQuake
                             Moved();
                         }
                     }
+                    RendererBody.SpriteEffect = SpriteEffects.None;
                 }
+            }
+
+            if (UpBlocked)
+            {
+                if (Velocity.Y > 0)
+                {
+                    Velocity.Y = 0;
+                }
+            }
+
+            if (LeftBlocked || RightBlocked)
+            {
+                //if (Velocity.Y > 0)
+                //{
+                //    Velocity.Y = 0;
+                //}
             }
 
             if (Velocity.Y != 0)
@@ -146,8 +184,22 @@ namespace TerraQuake
                 if (Velocity.X != 0)
                 {
                     PreMoved();
-                    Object.Position.X++;
-                    Velocity.X--;
+
+                    if(Velocity.X > 0)
+                    {
+                        if (!RightBlocked)
+                        {
+                            Object.Position.X++;
+                            Velocity.X++;
+                        }
+                    } else
+                    {
+                        if (!LeftBlocked)
+                        {
+                            Object.Position.X--;
+                            Velocity.X--;
+                        }
+                    }
                     Moved();
                 }
             } else
@@ -166,17 +218,23 @@ namespace TerraQuake
 
         public void Jump()
         {
-            if (OnGround)
+            if (OnGround && !UpBlocked)
             {
                 Velocity.Y = 30;
             }
         }
         public void JumpForward()
         {
-            if (OnGround)
+            if (OnGround && !UpBlocked)
             {
-                Velocity.Y = 20;
-                Velocity.X = 50;
+                Velocity.Y = 40;
+                if(RendererBody.SpriteEffect == SpriteEffects.FlipHorizontally)
+                {
+                    Velocity.X = -50;
+                } else
+                {
+                    Velocity.X = 50;
+                }
             }
         }
         public string GetIdle()

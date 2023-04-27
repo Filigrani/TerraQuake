@@ -62,6 +62,7 @@ namespace TerraQuake
         {
             Simple,
             SimpleSnow,
+            Solid,
             Count,
         }
 
@@ -1140,6 +1141,9 @@ namespace TerraQuake
                     break;
                 case GenerationStyle.SimpleSnow:
                     SimpleGeneratorSnow();
+                    break;
+                case GenerationStyle.Solid:
+                    SolidGenerator();
                     break;
                 default:
                     SolidGenerator();
