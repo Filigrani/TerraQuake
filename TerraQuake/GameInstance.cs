@@ -282,6 +282,10 @@ namespace TerraQuake
                         LevelManager.StartLevel("Game");
                     }
                 }
+                if (Input.KeyPressed(Keys.M))
+                {
+                    Network.Test();
+                }
 
                 bool Click = Mouse.GetState().LeftButton == ButtonState.Pressed;
                 bool Click2 = Mouse.GetState().RightButton == ButtonState.Pressed;
@@ -343,28 +347,28 @@ namespace TerraQuake
             string Text = "";
             if (DebugText != null)
             {
-                if (TerrainInstance != null && MyGhost != null)
-                {
-                    Text = "Colide " + TerrainInstance.CheckCollision(MyGhost.GetPhysicalColision2())
-                        + "\nG " + MyGhost.OnGround + " L " + MyGhost.LeftBlocked + " R " + MyGhost.RightBlocked
-                        + "\nLast Scan X " + TerrainInstance.LastScanX + " " + TerrainInstance.LastScanXEnd
-                        + "\nLast Scan Y " + TerrainInstance.LastScanY + " " + TerrainInstance.LastScanYEnd
-                        + "\nLongest Update " + TerrainInstance.LongetsUpdateMs + "ms"
-                        + "\nChunks " + TerrainInstance.Chunks.Count + " ChunkRow " + TerrainInstance.ChunksRow
-                        + "\nLast Hole X " + TerrainInstance.LastHole.X + " Y " + TerrainInstance.LastHole.Y
-                        + "\nPos X " + MyGhost.Object.Position.X + " Y " + MyGhost.Object.Position.Y;
-                }
                 //if (TerrainInstance != null && MyGhost != null)
                 //{
-                //    Text = "T - Make Hole"
-                //        + "\nY - Ball of snow"
-                //        + "\nU - Water"
-                //        + "\nB Benchmark holes"
-                //        + "\nR - New terrain"
-                //        + "\nK - Teleport"
-                //        + "\nF5 - Restart level" 
-                //        + "\nEsc - Back to menu";
+                //    Text = "Colide " + TerrainInstance.CheckCollision(MyGhost.GetPhysicalColision2())
+                //        + "\nG " + MyGhost.OnGround + " L " + MyGhost.LeftBlocked + " R " + MyGhost.RightBlocked
+                //        + "\nLast Scan X " + TerrainInstance.LastScanX + " " + TerrainInstance.LastScanXEnd
+                //        + "\nLast Scan Y " + TerrainInstance.LastScanY + " " + TerrainInstance.LastScanYEnd
+                //        + "\nLongest Update " + TerrainInstance.LongetsUpdateMs + "ms"
+                //        + "\nChunks " + TerrainInstance.Chunks.Count + " ChunkRow " + TerrainInstance.ChunksRow
+                //        + "\nLast Hole X " + TerrainInstance.LastHole.X + " Y " + TerrainInstance.LastHole.Y
+                //        + "\nPos X " + MyGhost.Object.Position.X + " Y " + MyGhost.Object.Position.Y;
                 //}
+                if (TerrainInstance != null && MyGhost != null)
+                {
+                    Text = "T - Make Hole"
+                        + "\nY - Ball of snow"
+                        + "\nU - Water"
+                        + "\nB Benchmark holes"
+                        + "\nR - New terrain"
+                        + "\nK - Teleport"
+                        + "\nF5 - Restart level"
+                        + "\nEsc - Back to menu";
+                }
                 DebugText.SetText(Text);
             }
             foreach (SpriteFont Font in SpriteFont.SpriteFonts)
