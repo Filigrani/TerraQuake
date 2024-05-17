@@ -12,6 +12,11 @@
     <PackageIcon>Icon.ico</PackageIcon>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="Components\**" />
+    <EmbeddedResource Remove="Components\**" />
+    <None Remove="Components\**" />
+  </ItemGroup>
+  <ItemGroup>
     <None Remove="Icon.bmp" />
   </ItemGroup>
   <ItemGroup>
@@ -24,9 +29,18 @@
   <ItemGroup>
     <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.1.303" />
     <PackageReference Include="MonoGame.Content.Builder.Task" Version="3.8.1.303" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="SpriterDotNet.MonoGame" Version="1.6.1" />
   </ItemGroup>
   <ItemGroup>
+    <None Update="Content\ghost_abigail_victorian\ghost_abigail_victorian.scml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Content\GreyGuy\player.autosave.scml">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </None>
+    <None Update="Content\GreyGuy\player.scml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Icon.ico">
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
